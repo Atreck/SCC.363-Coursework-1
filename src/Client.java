@@ -1,19 +1,41 @@
+import java.net.InetAddress;
 import java.rmi.Naming;
+import javax.rmi.ssl.SslRMIClientSocketFactory;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 
 public class Client {
 
-    private MedicalService medicalService;
+    private AAAService AAAServiceObj;
 
-    public Client() throws Exception {
-        System.out.println("Starting the MedicalService CLI for a client...");
-        this.medicalService = (MedicalService) Naming.lookup("rmi://localhost/MedicalService");
+    private final int PORT = 2019;
+
+    public Client() {
+        connectClient();
     }
 
-    public static void main(String[] args) {
+    private void connectClient() {
         try {
-            new Client();
+            // Make reference to SSL-based registry
+            Registry registry = LocateRegistry.getRegistry(
+                    InetAddress.getLocalHost().getHostName(), PORT,
+                    new SslRMIClientSocketFactory());
+
+            // "obj" is the identifier that we'll use to refer
+            // to the remote object that implements the "Hello"
+            // interface
+            this.AAAServiceObj = (AAAService) registry.lookup("AAAServer");
+
+            String message = "blank";
+            message = this.AAAServiceObj.sayHello();
+            System.out.println(message+"\n");
         } catch (Exception e) {
+            System.out.println("HelloClient exception: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public static void main(String args[]) {
+       Client client = new Client();
     }
 }

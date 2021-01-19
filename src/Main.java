@@ -5,13 +5,13 @@ public class Main
 {
     private static Scanner s = new Scanner(System.in);
     private static HashMap<String, String> database = new HashMap<>();
-    private static MedicalService server;
+    private static AAAService server;
     private static String tempName;
     private static String firstPass;
     public static void main(String[] args) throws Exception
     {
         try {
-            server = (MedicalService) Naming.lookup("rmi://localhost/MedicalService");
+            server = (AAAService) Naming.lookup("rmi://localhost/MedicalService");
 
             database.put("admin", "password");
 
