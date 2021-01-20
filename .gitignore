@@ -11,6 +11,8 @@
 .mtj.tmp/
 
 # Package Files #
+settings.json
+*.pdf
 *.war
 *.nar
 *.ear
