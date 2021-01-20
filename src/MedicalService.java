@@ -12,5 +12,7 @@ public interface MedicalService extends Remote
 
     public String secretKeyGen() throws Exception;
 
-	public String TOTPcode(String secretKey) throws Exception;
+    public String TOTPcode(String secretKey) throws Exception;
+    
+    public void lockUser(String user) throws Exception;
 }

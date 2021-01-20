@@ -8,6 +8,7 @@ public class Main
     private static String tempName;
     private static String tempPass;
     private static String firstPass;
+    private static int tries;
 
     public Main() throws Exception
     {
@@ -34,24 +35,44 @@ public class Main
         }
 
         User user = server.retrieveUser(tempName);
-        System.out.println(user.password);
         System.out.println("Enter password:");
         tempPass = s.nextLine();
-
-        while(!tempPass.equals(user.password)) //Add counter. Max 5 tries.
+        
+        tries = 2;
+        while(!tempPass.equals(user.password) && tries > 0)
         {
-            System.out.println("Password incorrect. Please try again.");
+            System.out.println("Password incorrect. Please try again. " + tries + " tries remaining.");
             tempPass = s.nextLine();
+            if(tempPass.equals(user.password)) { break; }
+            tries--;
+
+            if(tries == 0)
+            {
+                System.out.println("This account has been locked. Please contact the system administrator to unlock your account."); //Add implementation in Server.java to lock out user using the lockUser() method.
+                server.lockUser(tempName);
+                System.exit(0);
+            }
         }
+
         if(user.secretCode != null)
         {
             System.out.println("Please enter your 6-digit authentication code:");
             String tempCode = s.nextLine();
 
-            while(!tempCode.equals(server.TOTPcode(user.secretCode))) //Add counter. Max 5 tries.
+            tries = 2;
+            while(!tempCode.equals(server.TOTPcode(user.secretCode)) && tries > 0)
             {
-                System.out.println("Code incorrect. Please try again.");
+                System.out.println("Code incorrect. Please try again. " + tries + " tries remaining.");
                 tempCode = s.nextLine();
+                if(tempCode.equals(server.TOTPcode(user.secretCode))) { break; }
+                tries--;
+
+                if(tries == 0)
+                {
+                    System.out.println("This account has been locked. Please contact the system administrator to unlock your account."); //Add implementation in Server.java to lock out user using the lockUser() method.
+                    server.lockUser(tempName);
+                    System.exit(0);
+                }
             }
         }
         System.out.println("LOGGED IN");
