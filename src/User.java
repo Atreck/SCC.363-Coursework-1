@@ -2,6 +2,8 @@ import java.io.Serializable;
 
 public class User implements Serializable
 {
+    // TODO: Add docs and comments.
+
     public String username;
     public String password;
     public String secretCode;

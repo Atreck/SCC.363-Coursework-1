@@ -7,6 +7,8 @@ import de.taimos.totp.*;
 
 public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService
 {
+    //TODO: Add docs and comments.
+
     private static HashMap<String, User> database = new HashMap<>();
 
     public Server() throws Exception

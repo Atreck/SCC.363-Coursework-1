@@ -2,6 +2,8 @@ import java.rmi.*;
 
 public interface MedicalService extends Remote
 {
+    //TODO: Add docs and comments.
+
     public User retrieveUser(String username) throws Exception;
 
     public void addUser(String username, String password, String key) throws Exception;
