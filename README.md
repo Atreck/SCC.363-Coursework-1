@@ -1,7 +1,7 @@
 # SCC.363-Coursework-1
 A third year Computer Science coursework to implement varying degrees of security and functionality to a registration/login system in a medical environment.
 
-##Usage
+## Usage
 To use in its current state, you must have 3 terminals open (2 if using included shell script)
 
 - Open 3(2) terminals and navigate all to the src dir
