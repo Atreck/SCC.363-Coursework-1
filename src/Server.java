@@ -50,6 +50,11 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 		String hexKey = Hex.encodeHexString(bytes);
 		return TOTP.getOTP(hexKey);
     }
+
+    public void lockUser(String user) throws Exception
+    {
+        System.out.println("SKIDADDLE SKIDOODLE THE USER " + user + " IS NOW A NOODLE");
+    }
     public static void main(String[] args) throws Exception
     {
         try {

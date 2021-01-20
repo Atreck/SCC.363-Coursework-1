@@ -10,6 +10,7 @@ public class Main
     private static String tempName;
     private static String tempPass;
     private static String firstPass;
+    private static int tries;
 
     private final String REGISTER = "register";
     private final String LOGIN = "login";
@@ -71,26 +72,45 @@ public class Main
         }
 
         User user = server.retrieveUser(tempName);
-        System.out.println(user.password);
         System.out.println("Enter password:");
         tempPass = userInput();
-
-        while(!tempPass.equals(user.password)) //Add counter. Max 5 tries.
+        
+        tries = 2;
+        while(!tempPass.equals(user.password) && tries > 0)
         {
-            System.out.println("Password incorrect. Please try again.");
-            tempPass = s.nextLine();
+            System.out.println("Password incorrect. Please try again. " + tries + " tries remaining.");
+            tempPass = userInput();
+            if(tempPass.equals(user.password)) { break; }
+            tries--;
+
+            if(tries == 0)
+            {
+                System.out.println("This account has been locked. Please contact the system administrator to unlock your account."); //Add implementation in Server.java to lock out user using the lockUser() method.
+                server.lockUser(tempName);
+                System.exit(0);
+            }
         }
+
         if(user.secretCode != null)
         {
             System.out.println("\nPlease enter your 6-digit authentication code:");
             System.out.println("Type 'cancel' to go back to the main menu.");
             String tempCode = userInput();
 
-            while(!tempCode.equals(server.TOTPcode(user.secretCode))) //Add counter. Max 5 tries.
+            tries = 2;
+            while(!tempCode.equals(server.TOTPcode(user.secretCode)) && tries > 0)
             {
-                if (tempCode.equals("cancel")) break;
-                System.out.println("Code incorrect. Please try again.");
+                System.out.println("Code incorrect. Please try again. " + tries + " tries remaining.");
                 tempCode = userInput();
+                if(tempCode.equals(server.TOTPcode(user.secretCode))) { break; }
+                tries--;
+
+                if(tries == 0)
+                {
+                    System.out.println("This account has been locked. Please contact the system administrator to unlock your account."); //Add implementation in Server.java to lock out user using the lockUser() method.
+                    server.lockUser(tempName);
+                    System.exit(0);
+                }
             }
         }
         System.out.println("LOGGED IN");
