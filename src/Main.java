@@ -26,7 +26,6 @@ public class Main
     public void mainScreen() throws Exception
     {
         System.out.println("\nWelcome to the Medical Portal!");
-        System.out.println("Type the number of the action you would like to undertake:");
         System.out.println("1. Type 'register' to join the MedicalService.");
         System.out.println("2. Type 'login' to sign in to the service");
         System.out.println("3. Type 'exit' to quit the service.");
