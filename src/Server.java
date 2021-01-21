@@ -53,6 +53,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
     public void lockUser(String user) throws Exception
     {
+        // Okay this is just so beautiful, can we leave it like that please hahahah ~ Kas
         System.out.println("SKIDADDLE SKIDOODLE THE USER " + user + " IS NOW A NOODLE");
     }
     public static void main(String[] args) throws Exception

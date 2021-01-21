@@ -54,7 +54,7 @@ public class Main
     }
 
     /**
-     * TODO: Break it down into for example usernmae, password, code validation.
+     * TODO: Break it down into for example username, password, code validation.
      * TODO: Maybe add different status codes? "If username, etc valid --> return 1" if status 1 --> bring the user records screen, else print unsuccessful and go back to the main screen?
      * TODO: Add something so that a user can go back to the main menu.
      * @throws Exception
