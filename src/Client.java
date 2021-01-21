@@ -17,9 +17,10 @@ public class Client {
     private void connectClient() {
         try {
             // Make reference to SSL-based registry
+//            System.out.println(InetAddress.getLocalHost().getHostName());
             Registry registry = LocateRegistry.getRegistry(
                     InetAddress.getLocalHost().getHostName(), PORT,
-                    new SslRMIClientSocketFactory());
+                    new RMISSLClientSocketFactory());
 
             // "obj" is the identifier that we'll use to refer
             // to the remote object that implements the "Hello"

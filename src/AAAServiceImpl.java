@@ -9,24 +9,24 @@ public class AAAServiceImpl extends java.rmi.server.UnicastRemoteObject implemen
 
     public AAAServiceImpl() throws Exception
     {
-        super(PORT, new SslRMIClientSocketFactory(),
-                new SslRMIServerSocketFactory());
+        super(PORT, new RMISSLClientSocketFactory(),
+                new RMISSLServerSocketFactory());
         startService();
     }
 
     private void startService() {
-        // Create and install a security manager
-        if (System.getSecurityManager() == null) {
-            System.setSecurityManager(new SecurityManager());
-        }
+//        // Create and install a security manager
+//        if (System.getSecurityManager() == null) {
+//            System.setSecurityManager(new SecurityManager());
+//        }
 
         try {
             // Create SSL-based registry
             Registry registry = LocateRegistry.createRegistry(PORT,
-                    new SslRMIClientSocketFactory(),
-                    new SslRMIServerSocketFactory());
+                    new RMISSLClientSocketFactory(),
+                    new RMISSLServerSocketFactory());
 
-            // Bind this object instance to the name "HelloServer"
+            // Bind this object instance to the name "AAAServer"
             registry.bind("AAAServer", this);
 
             System.out.println("AAAServer bound in registry\nServer running...");
