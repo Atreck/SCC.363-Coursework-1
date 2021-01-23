@@ -6,12 +6,14 @@ public class User implements Serializable
 
     public String username;
     public String password;
+    public byte[] salt;
     public String secretCode;
 
-    public User(String user, String pass, String code)
+    public User(String user, String pass, String code, byte[] saltCode)
     {
         this.username = user;
         this.password = pass;
         this.secretCode = code;
+        this.salt = saltCode;
     }
 }

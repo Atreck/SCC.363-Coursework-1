@@ -154,10 +154,34 @@ public class Main
         }
 
         // Salt and Hash accepted password
+        MessageDigest digest;
 
+        try {
 
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (Exception e) {
+            //TODO: handle exception
+            return;
+        }
 
-        server.receivedRegistration(tempName, firstPass);
+        SecureRandom random = new SecureRandom();
+
+        byte[] salt = new byte[16];
+        random.nextBytes(salt);
+
+        digest.update(salt);
+
+        byte[] hashed = digest.digest(firstPass.getBytes(StandardCharsets.UTF_8));
+
+        StringBuilder stringBuilder = new StringBuilder();
+        for (byte b : hashed)
+            stringBuilder.append(String.format("%02x", b));
+
+        String encodedPassword = stringBuilder.toString();
+
+        // encoded password and salt to be stored
+
+        server.receivedRegistration(tempName, encodedPassword);
         System.out.println("\nRegistration successful. Would you like to set up Two Factor Authentication? (yes/no)");
         while(true)
         {
@@ -213,33 +237,6 @@ public class Main
 
     }
 
-    private String saltHash(String input)
-    {
-        MessageDigest digest;
-
-        try {
-
-            digest = MessageDigest.getInstance("SHA-256");
-
-            SecureRandom random = new SecureRandom();
-
-            byte[] salt = new byte[16];
-            random.nextBytes(salt);
-
-            digest.update(salt);
-
-            byte[] hashed = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-
-            StringBuilder stringBuilder = new StringBuilder();
-            for (byte b : hashed)
-                stringBuilder.append(String.format("%02x", b));
-
-            
-
-        } catch (Exception e) {
-            //TODO: handle exception
-        }
-    }
 
     public static void main(String[] args) throws Exception
     {
