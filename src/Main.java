@@ -5,6 +5,11 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+
 public class Main
 {
     private static Scanner s = new Scanner(System.in);
@@ -148,6 +153,10 @@ public class Main
             System.out.println("Confirm password: ");
         }
 
+        // Salt and Hash accepted password
+
+
+
         server.receivedRegistration(tempName, firstPass);
         System.out.println("\nRegistration successful. Would you like to set up Two Factor Authentication? (yes/no)");
         while(true)
@@ -185,7 +194,7 @@ public class Main
                     p = Pattern.compile("[a-z]");
                     m = p.matcher(input);
 
-                    if ((m.find()) && (input.length() > 8))
+                    if ((m.find()) && (input.length() > 10))
                     {
                         return true;
                     }
@@ -199,9 +208,37 @@ public class Main
         System.out.println("At least 1 uppercase character");
         System.out.println("At least 1 number");
         System.out.println("At least 1 special character");
-        System.out.println("At least 8 characters");
+        System.out.println("At least 10 characters");
         return false;
 
+    }
+
+    private String saltHash(String input)
+    {
+        MessageDigest digest;
+
+        try {
+
+            digest = MessageDigest.getInstance("SHA-256");
+
+            SecureRandom random = new SecureRandom();
+
+            byte[] salt = new byte[16];
+            random.nextBytes(salt);
+
+            digest.update(salt);
+
+            byte[] hashed = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder stringBuilder = new StringBuilder();
+            for (byte b : hashed)
+                stringBuilder.append(String.format("%02x", b));
+
+            
+
+        } catch (Exception e) {
+            //TODO: handle exception
+        }
     }
 
     public static void main(String[] args) throws Exception
