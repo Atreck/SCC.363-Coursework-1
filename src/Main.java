@@ -2,6 +2,8 @@ import java.awt.*;
 import java.awt.desktop.SystemSleepEvent;
 import java.rmi.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Main
 {
@@ -129,6 +131,14 @@ public class Main
         System.out.println("Enter password: ");
         firstPass = userInput();
 
+        // PASSWORD STRENGTH CHECK
+        while(!strengthCheck(firstPass))
+        {
+            System.out.println("Enter password: ");
+            firstPass = userInput();
+        }
+        
+
         System.out.println("Confirm password: ");
 
         while(!firstPass.equals(s.nextLine()))
@@ -154,6 +164,46 @@ public class Main
         }
         mainScreen();
     }
+
+    private boolean strengthCheck(String input)
+    {
+        Pattern p = Pattern.compile("[^A-Za-z0-9 ]"); // Find character not in that list
+        Matcher m = p.matcher(input);
+
+        if (m.find()) // If a special character is found
+        {
+            p = Pattern.compile("[0-9]");
+            m = p.matcher(input);
+
+            if (m.find())
+            {
+                p = Pattern.compile("[A-Z]");
+                m = p.matcher(input);
+
+                if (m.find())
+                {
+                    p = Pattern.compile("[a-z]");
+                    m = p.matcher(input);
+
+                    if ((m.find()) && (input.length() > 8))
+                    {
+                        return true;
+                    }
+                }
+
+            }
+        }
+
+        System.out.println("Please ensure your password includes all requirements: ");
+        System.out.println("At least 1 lowercase character");
+        System.out.println("At least 1 uppercase character");
+        System.out.println("At least 1 number");
+        System.out.println("At least 1 special character");
+        System.out.println("At least 8 characters");
+        return false;
+
+    }
+
     public static void main(String[] args) throws Exception
     {
         try {
