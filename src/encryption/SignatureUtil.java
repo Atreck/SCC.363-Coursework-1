@@ -12,11 +12,15 @@ import java.util.Base64;
  * A simple utility aiding the creation of public and private key pairs
  * as well as the signature which can be used later for verifying the
  *  users by a server and vice-versa.
+ *
+ *  NOTE: Normally there is some authority assigning the keys,
+ *  it wouldn't look like this in the production - this is just a
+ *  simplified version to aid the development process.
  */
 
 public class SignatureUtil {
 
-    private static final String ALGO_TYPE = "SHA1WithDSA";  //Maybe change it to SHA256withRSA later (slower but more robust)
+    private static final String ALGO_TYPE = "SHA256WithDSA";  //Maybe change it to SHA256withRSA later (slower but more robust)
 
     /**
      * Generates a pair of public and private keys.
@@ -30,7 +34,7 @@ public class SignatureUtil {
     public static KeyPair genKeyPair(String algo, String user) throws NoSuchAlgorithmException {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algo);
         SecureRandom secureRandom = new SecureRandom();
-        keyGen.initialize(1024, secureRandom);
+        keyGen.initialize(2048, secureRandom);
         // Keys can be 1024 or 2048-bit long (the longer the harder to crack)
         KeyPair pair = keyGen.generateKeyPair();
 
@@ -129,7 +133,7 @@ public class SignatureUtil {
     /**
      * Method which allows to sign a challenge sent by some verification party.
      * @param challenge a challenge sent by the other party
-     * @param privKey a PrivateKey of the party to which challenge was sent
+     * @param privKey a PrivateKey of the party receiving the challenge
      * @return a signed challenge
      * @throws NoSuchAlgorithmException
      * @throws IOException
@@ -170,5 +174,17 @@ public class SignatureUtil {
         boolean verified = signature.verify(Base64.getDecoder().decode(signedChallenge));
 
         return verified;
+    }
+
+
+    /* Comment and uncomment depending on the need
+        (should be a one-time use only for creating the server's key pair)
+   */
+    public static void main (String[] args) {
+        try {
+            SignatureUtil.genKeyPair("DSA", "server");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -16,4 +16,11 @@ public class User implements Serializable
         this.secretCode = code;
         this.salt = saltCode;
     }
+
+    // Added a second constructor to ignore the code errors in the Server.java for now..
+    public User(String user, String pass, String code) {
+        this.username = user;
+        this.password = pass;
+        this.secretCode = code;
+    }
 }
