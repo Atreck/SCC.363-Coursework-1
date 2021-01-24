@@ -125,63 +125,47 @@ public class Main
     private void register() throws Exception
     {
         System.out.println("\nREGISTRATION SYSTEM\n\nEnter username:");
+        // Username input
         tempName = userInput();
-
-        while(server.userExists(tempName))
-        {
-            System.out.println("\nUsername is already taken.\n\nPlease enter a new username:");
-            tempName = userInput();
+        // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
+        Message request = new Message(tempName, null);
+        Message response = server.validateUsername(request);
+        if (response.isValid()) { takePassword();}
+        else {
+            System.out.println("\nThat username is already taken.\n\n");
+            // Go back to the beginning
+            register();
         }
+    }
 
+    public void takePassword() throws Exception {
+        // Password input
         System.out.println("Enter password: ");
         firstPass = userInput();
-
-        // PASSWORD STRENGTH CHECK
-        while(!strengthCheck(firstPass))
-        {
-            System.out.println("Enter password: ");
-            firstPass = userInput();
-        }
-        
-
         System.out.println("Confirm password: ");
+        tempPass = userInput();
 
-        while(!firstPass.equals(s.nextLine()))
+        if(!firstPass.equals(tempPass))
         {
-            System.out.println("\nPasswords do not match.\n\nPlease enter your password.");
-            firstPass = userInput();
-            System.out.println("Confirm password: ");
+            System.out.println("\nPasswords do not match\n");
+            takePassword();
         }
 
-        // Salt and Hash accepted password
-        MessageDigest digest;
-
-        try {
-
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (Exception e) {
-            //TODO: handle exception
-            return;
+        Message message = new Message(null, tempPass);
+        Message response = server.validatePassword(message);
+        if (response.isValid()) setUpAuthentication();
+        else {
+            System.out.println("Please ensure your password includes all requirements: ");
+            System.out.println("At least 1 lowercase character");
+            System.out.println("At least 1 uppercase character");
+            System.out.println("At least 1 number");
+            System.out.println("At least 1 special character");
+            System.out.println("At least 10 characters");
+            register();
         }
+    }
 
-        SecureRandom random = new SecureRandom();
-
-        byte[] salt = new byte[16];
-        random.nextBytes(salt);
-
-        digest.update(salt);
-
-        byte[] hashed = digest.digest(firstPass.getBytes(StandardCharsets.UTF_8));
-
-        StringBuilder stringBuilder = new StringBuilder();
-        for (byte b : hashed)
-            stringBuilder.append(String.format("%02x", b));
-
-        String encodedPassword = stringBuilder.toString();
-
-        // encoded password and salt to be stored
-
-        server.receivedRegistration(tempName, encodedPassword);
+    public void setUpAuthentication() throws Exception {
         System.out.println("\nRegistration successful. Would you like to set up Two Factor Authentication? (yes/no)");
         while(true)
         {
@@ -197,46 +181,6 @@ public class Main
         }
         mainScreen();
     }
-
-    private boolean strengthCheck(String input)
-    {
-        Pattern p = Pattern.compile("[^A-Za-z0-9 ]"); // Find character not in that list
-        Matcher m = p.matcher(input);
-
-        if (m.find()) // If a special character is found
-        {
-            p = Pattern.compile("[0-9]");
-            m = p.matcher(input);
-
-            if (m.find())
-            {
-                p = Pattern.compile("[A-Z]");
-                m = p.matcher(input);
-
-                if (m.find())
-                {
-                    p = Pattern.compile("[a-z]");
-                    m = p.matcher(input);
-
-                    if ((m.find()) && (input.length() > 10))
-                    {
-                        return true;
-                    }
-                }
-
-            }
-        }
-
-        System.out.println("Please ensure your password includes all requirements: ");
-        System.out.println("At least 1 lowercase character");
-        System.out.println("At least 1 uppercase character");
-        System.out.println("At least 1 number");
-        System.out.println("At least 1 special character");
-        System.out.println("At least 10 characters");
-        return false;
-
-    }
-
 
     public static void main(String[] args) throws Exception
     {

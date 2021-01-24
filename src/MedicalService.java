@@ -1,20 +1,84 @@
+import java.nio.charset.StandardCharsets;
 import java.rmi.*;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public interface MedicalService extends Remote
 {
     //TODO: Add docs and comments.
 
-    public User retrieveUser(String username) throws Exception;
+    User retrieveUser(String username) throws Exception;
 
-    public void addUser(String username, String password, String key) throws Exception;
+    void addUser(String username, String password, String key) throws Exception;
 
-    public Boolean userExists(String user) throws Exception;
+    boolean userExists(String user) throws Exception;
 
-    public void receivedRegistration(String user, String pass) throws Exception;
+    Message validateUsername(Message message) throws Exception;
 
-    public String secretKeyGen() throws Exception;
+    Message validatePassword(Message message) throws Exception;
 
-    public String TOTPcode(String secretKey) throws Exception;
+    default boolean strengthCheck(String input) throws Exception {
+        Pattern p = Pattern.compile("[^A-Za-z0-9 ]"); // Find character not in that list
+        Matcher m = p.matcher(input);
+
+        if (m.find()) // If a special character is found
+        {
+            p = Pattern.compile("[0-9]");
+            m = p.matcher(input);
+
+            if (m.find()) {
+                p = Pattern.compile("[A-Z]");
+                m = p.matcher(input);
+
+                if (m.find()) {
+                    p = Pattern.compile("[a-z]");
+                    m = p.matcher(input);
+
+                    if ((m.find()) && (input.length() > 10)) return true;
+                }
+
+            }
+        }
+        return false;
+    }
+
+    default void register(String user, String pass) throws Exception {
+        System.out.println("User created with username: " + user + " and password: " + pass);
+    }
+
+    default String saltPass(String pass) throws Exception {
+        MessageDigest digest;
+
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (Exception e) {
+            //TODO: handle exception
+            return null;
+        }
+
+        SecureRandom random = new SecureRandom();
+
+        byte[] salt = new byte[16];
+        random.nextBytes(salt);
+
+        digest.update(salt);
+
+        byte[] hashed = digest.digest(pass.getBytes(StandardCharsets.UTF_8));
+
+        StringBuilder stringBuilder = new StringBuilder();
+        for (byte b : hashed)
+            stringBuilder.append(String.format("%02x", b));
+
+        String encodedPassword = stringBuilder.toString();
+
+        return encodedPassword;
+    }
+
+    String secretKeyGen() throws Exception;
+
+    String TOTPcode(String secretKey) throws Exception;
     
-    public void lockUser(String user) throws Exception;
+    void lockUser(String user) throws Exception;
 }

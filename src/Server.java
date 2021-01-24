@@ -1,6 +1,8 @@
 import java.rmi.Naming;
 import java.security.*;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.codec.binary.*;
 import de.taimos.totp.*;
@@ -10,6 +12,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     //TODO: Add docs and comments.
 
     private static HashMap<String, User> database = new HashMap<>();
+    private String tempUsername;
 
     public Server() throws Exception
     {
@@ -27,14 +30,31 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         database.put(username, new User(username, password, key));
     }
 
-    public Boolean userExists(String user) throws Exception
+    public boolean userExists(String user) throws Exception
     {
         return database.containsKey(user);
     }
 
-    public void receivedRegistration(String user, String pass) throws Exception
-    {
-        System.out.println("User created with username: " + user + " and password: " + pass);
+    public Message validateUsername(Message request) throws Exception {
+        tempUsername = null;
+        tempUsername = request.getUsername();
+        boolean valid = !userExists(tempUsername);
+        System.out.println(valid);
+        return new Message(valid);
+    }
+
+    public Message validatePassword(Message request) throws Exception {
+        String password = request.getPassword();
+        boolean valid = strengthCheck(password);
+        if (valid) {
+            // ready to be stored
+            String saltedPass = saltPass(password);
+            // ready to be stored
+            register(tempUsername, password);
+        }
+        else { System.out.println("Registration failed with username:" + tempUsername +
+                "and password: " + password);}
+        return new Message(valid);
     }
 
     public String secretKeyGen() throws Exception

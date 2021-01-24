@@ -1,4 +1,4 @@
-package encryption;
+package signatures;
 
 import java.io.*;
 import java.security.*;
