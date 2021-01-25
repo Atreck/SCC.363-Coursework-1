@@ -4,10 +4,11 @@ public class User implements Serializable
 {
     // TODO: Add docs and comments.
 
-    public String username;
-    public String password;
-    public byte[] salt;
-    public String secretCode;
+    private String username;
+    private String password;
+    private int tries = 3;
+    private byte[] salt;
+    private String secretCode;
 
     public User(String user, String pass, String code, byte[] saltCode)
     {
@@ -22,5 +23,29 @@ public class User implements Serializable
         this.username = user;
         this.password = pass;
         this.secretCode = code;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public byte[] getSalt() {
+        return salt;
+    }
+
+    public String getSecretCode() {
+        return secretCode;
+    }
+
+    public int getTries() {
+        return tries;
+    }
+
+    public void setTries(int tries) {
+        this.tries = tries;
     }
 }

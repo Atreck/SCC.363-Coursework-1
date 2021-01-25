@@ -10,7 +10,12 @@ public class Message implements Serializable {
 
     private String username;
     private String password;
+    private String code;
     private boolean valid;
+    private User user;
+    private Main client;
+    private int status;
+    private int tries;
 
     /**
      * Constructs a client request containing a client's (prospect)
@@ -24,13 +29,45 @@ public class Message implements Serializable {
         this.password = password;
     }
 
+    public Message(String username, String password, Main client) {
+        this.username = username;
+        this.password = password;
+        this.client = client;
+    }
+
+    public Message(String username, String password, String code) {
+        this.username = username;
+        this.password = password;
+        this.code = code;
+    }
+
     public Message(boolean valid) { this.valid = valid; }
+
+    public Message(User user) {this.user = user; }
+
+    public Message(int status) {this.status = status; }
+
+    public Message(int status, int tries) {
+        this.status = status;
+        this.tries = tries;
+    }
+
+    public Message(int status, User user) {
+        this.status = status;
+        this.user = user;
+    }
 
     /**
      * Obtains a username connected with this request.
      * @return username provided with this request
      */
     public String getUsername() {return username;}
+
+    /**
+     * Obtains a User instance supplied with this message.
+     * @return User object
+     */
+    public User getUser() { return user;}
 
     /**
      * obtains a password supplied with this request
@@ -46,5 +83,21 @@ public class Message implements Serializable {
      */
     public boolean isValid() {
         return valid;
+    }
+
+    public Main getClient() {
+        return client;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public int getTries() {
+        return tries;
+    }
+
+    public String getCode() {
+        return code;
     }
 }

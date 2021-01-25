@@ -21,6 +21,7 @@ import java.util.Base64;
 public class SignatureUtil {
 
     private static final String ALGO_TYPE = "SHA256WithDSA";  //Maybe change it to SHA256withRSA later (slower but more robust)
+    public static final String ALGO_NAME = "DSA";
 
     /**
      * Generates a pair of public and private keys.
@@ -182,7 +183,7 @@ public class SignatureUtil {
    */
     public static void main (String[] args) {
         try {
-            SignatureUtil.genKeyPair("DSA", "server");
+            SignatureUtil.genKeyPair(ALGO_NAME, "server");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }

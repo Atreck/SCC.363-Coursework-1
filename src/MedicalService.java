@@ -1,3 +1,5 @@
+import signatures.SignatureUtil;
+
 import java.nio.charset.StandardCharsets;
 import java.rmi.*;
 import java.security.MessageDigest;
@@ -9,9 +11,15 @@ public interface MedicalService extends Remote
 {
     //TODO: Add docs and comments.
 
-    User retrieveUser(String username) throws Exception;
+    Message authenticateUser(Message message) throws Exception;
+
+    Message verifyPassword(Message message) throws Exception;
+
+    Message verifyCode(Message message) throws Exception;
 
     void addUser(String username, String password, String key) throws Exception;
+
+    void addUser(Message message) throws Exception;
 
     boolean userExists(String user) throws Exception;
 
@@ -46,6 +54,8 @@ public interface MedicalService extends Remote
 
     default void register(String user, String pass) throws Exception {
         System.out.println("User created with username: " + user + " and password: " + pass);
+        // Generate a key pair for the newly added user
+        SignatureUtil.genKeyPair(SignatureUtil.ALGO_NAME, user);
     }
 
     default String saltPass(String pass) throws Exception {

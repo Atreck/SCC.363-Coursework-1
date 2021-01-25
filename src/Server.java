@@ -1,11 +1,12 @@
+import java.nio.charset.Charset;
 import java.rmi.Naming;
 import java.security.*;
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Random;
 
 import org.apache.commons.codec.binary.*;
 import de.taimos.totp.*;
+import signatures.SignatureUtil;
 
 public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService
 {
@@ -13,21 +14,108 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
     private static HashMap<String, User> database = new HashMap<>();
     private String tempUsername;
+    private final int CHALLENGE_LEN = 50;
+    private final int PASS_INCORRECT = 2;
+    private final int PASS_CORRECT = 3;
+    private final int CODE_INCORRECT = 4;
+    private final int CODE_CORRECT = 5;
+    private final int SIGN_CORRECT = 6;
+    private final int SIGN_INCORRECT = 7;
+    private final int LOCKED = 8;
 
     public Server() throws Exception
     {
         super();
         addUser("admin", "password", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
+        addUser("testUser", "MyPassword#3456", "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU");
     }
 
-    public User retrieveUser(String username) throws Exception
+    public Message authenticateUser(Message data) throws Exception
     {
-        return database.get(username);
+        // Extract data from the message
+        Main client = data.getClient();
+        String username = data.getUsername();
+        System.out.println("** Authenticating user: " + username);
+
+        // Challenge the user
+        byte[] array = new byte[CHALLENGE_LEN];
+        new Random().nextBytes(array);
+        String challenge = new String(array, Charset.forName("UTF-8"));
+        String signedChallenge = client.signChallenge(challenge);
+        PublicKey pubKey = SignatureUtil.retrieveKeys(username, SignatureUtil.ALGO_NAME).getPublic();
+        boolean signCorrect = SignatureUtil.verifyChallenge(signedChallenge, challenge, pubKey);
+        if (signCorrect) {
+            System.out.println("** Authentication successful for user: " + username);
+            return new Message(SIGN_CORRECT);
+        }
+        else {
+            System.out.println("This is not user " + username + "! Impostor detected.");
+            return new Message(SIGN_INCORRECT);
+        }
+    }
+
+    public Message verifyPassword(Message message) throws  Exception {
+        String username = message.getUsername();
+        String pass = message.getPassword();
+
+        User user = database.get(username);
+
+        if (!pass.equals(user.getPassword()) && user.getTries() > 0)
+        {
+            user.setTries(user.getTries()-1);
+
+            if(user.getTries() == 0)
+            {
+                //Add implementation in Server.java to lock out user using the lockUser() method.
+                System.out.println("This account has been locked. Please contact the system administrator to unlock your account.");
+                lockUser(username);
+                return new Message(LOCKED);
+            }
+            return new Message(PASS_INCORRECT, user.getTries());
+        }
+        // reset the tries
+        user.setTries(3);
+        return new Message(PASS_CORRECT);
+    }
+
+    public Message verifyCode(Message message) throws Exception {
+        String username = message.getUsername();
+        String code = message.getPassword();  // password field can be used to carry code as well
+
+        User user = database.get(username);
+
+        if(user.getSecretCode() != null) {
+            if(!code.equals(TOTPcode(user.getSecretCode())) && user.getTries() > 0) {
+                user.setTries(user.getTries()-1);
+
+                if(user.getTries() == 0)
+                {
+                    //Add implementation in Server.java to lock out user using the lockUser() method.
+                    System.out.println("This account has been locked. Please contact the system administrator to unlock your account.");
+                    lockUser(username);
+                    return new Message(LOCKED);
+                }
+                return new Message(CODE_INCORRECT, user.getTries());
+            }
+        }
+        // reset the tries
+        user.setTries(3);
+        return new Message(CODE_CORRECT, user);
     }
 
     public void addUser(String username, String password, String key) throws Exception
     {
+        register(username, password);
         database.put(username, new User(username, password, key));
+    }
+
+    public void addUser(Message message) throws Exception {
+        String username = message.getUsername();
+        String password = message.getPassword();
+        String key = message.getCode();
+
+        database.put(username, new User(username, password, key));
+        register(username, password);
     }
 
     public boolean userExists(String user) throws Exception
@@ -43,14 +131,12 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return new Message(valid);
     }
 
-    public Message validatePassword(Message request) throws Exception {
-        String password = request.getPassword();
+    public Message validatePassword(Message message) throws Exception {
+        String password = message.getPassword();
         boolean valid = strengthCheck(password);
         if (valid) {
             // ready to be stored
             String saltedPass = saltPass(password);
-            // ready to be stored
-            register(tempUsername, password);
         }
         else { System.out.println("Registration failed with username:" + tempUsername +
                 "and password: " + password);}
