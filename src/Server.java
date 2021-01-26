@@ -1,4 +1,5 @@
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.rmi.Naming;
 import java.security.*;
 import java.util.HashMap;
@@ -8,6 +9,12 @@ import org.apache.commons.codec.binary.*;
 import de.taimos.totp.*;
 import signatures.SignatureUtil;
 
+import com.google.zxing.qrcode.*;
+import com.google.zxing.*;
+import com.google.zxing.common.*;
+import com.google.zxing.client.j2se.*;
+
+import java.nio.file.*;
 public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService
 {
     //TODO: Add docs and comments.
@@ -127,7 +134,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         tempUsername = null;
         tempUsername = request.getUsername();
         boolean valid = !userExists(tempUsername);
-        System.out.println(valid);
+        System.out.println("Validating username for " + tempUsername + ": " + valid);
         return new Message(valid);
     }
 
@@ -146,7 +153,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     public String secretKeyGen() throws Exception
 	{
 		byte[] bytes = new byte[20];
-		new SecureRandom().nextBytes(bytes);
+        new SecureRandom().nextBytes(bytes);
     	return new Base32().encodeToString(bytes);
 	}
 
@@ -155,6 +162,14 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     	byte[] bytes = new Base32().decode(secretKey);
 		String hexKey = Hex.encodeHexString(bytes);
 		return TOTP.getOTP(hexKey);
+    }
+
+    public void createQRimage(Message m) throws Exception
+    {
+        String content = "otpauth://totp/MedicalPortal: " + m.getUsername() + "?secret=" + m.getCode() + "&algorithm=SHA1&digits=6&period=30";
+        BitMatrix matrix = new QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, 200, 200);
+        Path path = FileSystems.getDefault().getPath("./" + m.getUsername() + "_QRcode.png");
+        MatrixToImageWriter.writeToPath(matrix, "PNG", path);
     }
 
     public void lockUser(String user) throws Exception

@@ -25,6 +25,8 @@ public class Main implements Serializable
     private Message msg;
     private Message response;
     private User currentUser;
+    private Boolean denied;
+    private int fakeTries = 2;
 
     private final String REGISTER = "register";
     private final String LOGIN = "login";
@@ -71,8 +73,7 @@ public class Main implements Serializable
     private String userInput()
     {
         System.out.print("> ");
-        String input = s.nextLine();
-        return input;
+        return s.nextLine();
     }
 
     /**
@@ -88,38 +89,39 @@ public class Main implements Serializable
     private void login() throws Exception
     {
         System.out.println("\nLOGIN SYSTEM\n\nEnter username: ");
+        denied = false;
         tempName = userInput();
 
         msg = new Message(tempName, null);
         response = server.validateUsername(msg);
-        if (response.isValid())     // meaning username does not exist
-        {
-            System.out.println("This username does not exist. Please try again.");
-            login();
+        if (response.isValid())    // meaning username does not exist
+            denied = true;
+        else {
+            msg = new Message(tempName, null, this);
+
+            response = server.authenticateUser(msg);
+            status = response.getStatus();
         }
-
-        msg = new Message(tempName, null, this);
-
-        response = server.authenticateUser(msg);
-        status = response.getStatus();
-        if (status == SIGN_CORRECT) {
+        if (status == SIGN_CORRECT | denied) {
             // Add server challenge as well?
             // Proceed to password verification
             response = takePass();
             status = response.getStatus();
-            while (status == PASS_INCORRECT) {
-                System.out.println("Password incorrect, please try again. Tries remaining: " + response.getTries());
+            while (status == PASS_INCORRECT | denied) {
+                System.out.println("Invalid username/password. Tries remaining: " + response.getTries());
                 response = takePass();
                 status = response.getStatus();
             }
+            
             checkLocked(status);        //check if the account hasn't been locked
             response = takeCode();      // proceed with code verification
-            status = takeCode().getStatus();
+            status = response.getStatus();
             while (status == CODE_INCORRECT) {
                 System.out.println("Code incorrect, please try again. Tries remaining: " + response.getTries());
                 response = takeCode();
                 status = response.getStatus();
             }
+
             checkLocked(status);       // check again if the account has not been locked
             // Finally if everything went gucci obtain the user object for the requested user
             if (status == CODE_CORRECT) {
@@ -128,6 +130,7 @@ public class Main implements Serializable
             }
 
         } else if (status == SIGN_INCORRECT) {
+            //Love it <3
             System.out.println("There is an impostor among us.");
         }
     }
@@ -142,21 +145,21 @@ public class Main implements Serializable
 
     private void register() throws Exception
     {
+        denied = false;
         System.out.println("\nREGISTRATION SYSTEM\n\nEnter username:");
         // Username input
         tempName = userInput();
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
         Message msg = new Message(tempName, null);
         response = server.validateUsername(msg);
-        if (response.isValid()) { takeNewPass();}
+        if (response.isValid()) { takeNewPass(); }
         else {
-            System.out.println("\nThat username is already taken.\n\n");
-            // Go back to the beginning
-            register();
+            denied = true;
+            takeNewPass();
         }
     }
 
-    public void takeNewPass() throws Exception {
+    public void takeNewPass() throws Exception {    //registration password
         // Password input
         System.out.println("Enter password: ");
         firstPass = userInput();
@@ -171,8 +174,10 @@ public class Main implements Serializable
 
         msg = new Message(null, tempPass);
         response = server.validatePassword(msg);
-        if (response.isValid()) setUpAuthentication();
+        if (response.isValid() && !denied)
+            setUpAuthentication();
         else {
+            System.out.println("\nInvalid username/password");
             System.out.println("Please ensure your password includes all requirements: ");
             System.out.println("At least 1 lowercase character");
             System.out.println("At least 1 uppercase character");
@@ -183,17 +188,23 @@ public class Main implements Serializable
         }
     }
 
-    private Message takePass() throws Exception {
+    private Message takePass() throws Exception {   //login password
         System.out.println("Enter password:");
         tempPass = userInput();
 
-        msg = new Message(tempName, tempPass);
-        response = server.verifyPassword(msg);
+        if(!denied) {
+            msg = new Message(tempName, tempPass);
+            response = server.verifyPassword(msg);
+        } else {
+            if(fakeTries == 0)
+                checkLocked(LOCKED);
+            response = new Message(PASS_INCORRECT, fakeTries--);
+        }
         return response;
 //        System.out.println("LOGGED IN");
     }
 
-    private Message takeCode() throws Exception {
+    private Message takeCode() throws Exception {   //login auth
         System.out.println("\nPlease enter your 6-digit authentication code:");
         System.out.println("--> Type 'none' if you don't have one");        // dummy value tbf as it is not checked
 //        System.out.println("Type 'cancel' to go back to the main menu.");
@@ -204,28 +215,33 @@ public class Main implements Serializable
         return response;
     }
 
-    private void setUpAuthentication() throws Exception {
+    private void setUpAuthentication() throws Exception {   //registration auth
         System.out.println("\nRegistration successful. Would you like to set up Two Factor Authentication? (yes/no)");
         String key = null;
-        while(true)
-        {
+        while(true) {
             String cmd = userInput();
             if(cmd.equals("yes")) {
                 key = server.secretKeyGen();
-                System.out.println("Please enter this code on your authenticator app:\n" + key);
+                msg = new Message(tempName, tempPass, key);
+                server.createQRimage(msg);
+                
+                System.out.println("\nPlease scan the picture displayed.");
+                Runtime.getRuntime().exec("cmd.exe /c start " + "./" + msg.getUsername() + "_QRcode.png");
+                System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);
                 break;
             } else if(cmd.equals("no")) {
                 System.out.println("Understandable, have a nice day.");     // lol Trump would appreciate
+                msg = new Message(tempName, tempPass, key);
                 break;
             }
 //            System.out.println("Please enter 'yes' or 'no'");
         }
-        msg = new Message(tempName, tempPass, key);
+        // Runtime.getRuntime().exec("cmd /c start del /S *.png");  //will delete all .png files in current dir (will implement later on)
         server.addUser(msg);
         mainScreen();
     }
 
-    public String signChallenge(String challenge) throws Exception {
+    public String signChallenge(String challenge) throws Exception {    
         System.out.println(tempName);
         PrivateKey privKey = SignatureUtil.retrieveKeys(tempName, SignatureUtil.ALGO_NAME).getPrivate();
         String signed = SignatureUtil.signChallenge(challenge, privKey);

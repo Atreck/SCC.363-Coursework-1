@@ -22,6 +22,8 @@ public interface MedicalService extends Remote
     void addUser(Message message) throws Exception;
 
     boolean userExists(String user) throws Exception;
+    
+    void createQRimage(Message m) throws Exception;
 
     Message validateUsername(Message message) throws Exception;
 
