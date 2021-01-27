@@ -1,3 +1,5 @@
+package src;
+
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.rmi.Naming;
@@ -7,7 +9,7 @@ import java.util.Random;
 
 import org.apache.commons.codec.binary.*;
 import de.taimos.totp.*;
-import signatures.SignatureUtil;
+import src.signatures.SignatureUtil;
 
 import com.google.zxing.qrcode.*;
 import com.google.zxing.*;
@@ -15,8 +17,8 @@ import com.google.zxing.common.*;
 import com.google.zxing.client.j2se.*;
 
 import java.nio.file.*;
-public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService
-{
+public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService {
+
     //TODO: Add docs and comments.
 
     private static HashMap<String, User> database = new HashMap<>();
@@ -30,15 +32,13 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     private final int SIGN_INCORRECT = 7;
     private final int LOCKED = 8;
 
-    public Server() throws Exception
-    {
+    public Server() throws Exception {
         super();
-        addUser("admin", "password", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
-        addUser("testUser", "MyPassword#3456", "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU");
+        addUser(new Message("admin", "password", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A"));
+        addUser(new Message("testUser", "MyPassword#3456", "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
-    public Message authenticateUser(Message data) throws Exception
-    {
+    public Message authenticateUser(Message data) throws Exception {
         // Extract data from the message
         Main client = data.getClient();
         String username = data.getUsername();
@@ -67,12 +67,10 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
         User user = database.get(username);
 
-        if (!pass.equals(user.getPassword()) && user.getTries() > 0)
-        {
+        if (!pass.equals(user.getPassword()) && user.getTries() > 0) {
             user.setTries(user.getTries()-1);
 
-            if(user.getTries() == 0)
-            {
+            if(user.getTries() == 0) {
                 //Add implementation in Server.java to lock out user using the lockUser() method.
                 System.out.println("This account has been locked. Please contact the system administrator to unlock your account.");
                 lockUser(username);
@@ -95,8 +93,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             if(!code.equals(TOTPcode(user.getSecretCode())) && user.getTries() > 0) {
                 user.setTries(user.getTries()-1);
 
-                if(user.getTries() == 0)
-                {
+                if(user.getTries() == 0) {
                     //Add implementation in Server.java to lock out user using the lockUser() method.
                     System.out.println("This account has been locked. Please contact the system administrator to unlock your account.");
                     lockUser(username);
@@ -110,12 +107,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return new Message(CODE_CORRECT, user);
     }
 
-    public void addUser(String username, String password, String key) throws Exception
-    {
-        register(username, password);
-        database.put(username, new User(username, password, key));
-    }
-
     public void addUser(Message message) throws Exception {
         String username = message.getUsername();
         String password = message.getPassword();
@@ -125,15 +116,9 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         register(username, password);
     }
 
-    public boolean userExists(String user) throws Exception
-    {
-        return database.containsKey(user);
-    }
-
     public Message validateUsername(Message request) throws Exception {
-        tempUsername = null;
         tempUsername = request.getUsername();
-        boolean valid = !userExists(tempUsername);
+        boolean valid = !database.containsKey(tempUsername);
         System.out.println("Validating username for " + tempUsername + ": " + valid);
         return new Message(valid);
     }
@@ -150,35 +135,30 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return new Message(valid);
     }
 
-    public String secretKeyGen() throws Exception
-	{
+    public String secretKeyGen() throws Exception {
 		byte[] bytes = new byte[20];
         new SecureRandom().nextBytes(bytes);
     	return new Base32().encodeToString(bytes);
 	}
 
-	public String TOTPcode(String secretKey) throws Exception
-	{
+	public String TOTPcode(String secretKey) throws Exception {
     	byte[] bytes = new Base32().decode(secretKey);
 		String hexKey = Hex.encodeHexString(bytes);
 		return TOTP.getOTP(hexKey);
     }
 
-    public void createQRimage(Message m) throws Exception
-    {
+    public void createQRimage(Message m) throws Exception {
         String content = "otpauth://totp/MedicalPortal: " + m.getUsername() + "?secret=" + m.getCode() + "&algorithm=SHA1&digits=6&period=30";
         BitMatrix matrix = new QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, 200, 200);
         Path path = FileSystems.getDefault().getPath("./" + m.getUsername() + "_QRcode.png");
         MatrixToImageWriter.writeToPath(matrix, "PNG", path);
     }
 
-    public void lockUser(String user) throws Exception
-    {
+    public void lockUser(String user) throws Exception {
         // Okay this is just so beautiful, can we leave it like that please hahahah ~ Kas
         System.out.println("SKIDADDLE SKIDOODLE THE USER " + user + " IS NOW A NOODLE");
     }
-    public static void main(String[] args) throws Exception
-    {
+    public static void main(String[] args) throws Exception {
         try {
             System.out.println("Starting the server...");
             MedicalService server = new Server();

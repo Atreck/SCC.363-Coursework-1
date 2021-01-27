@@ -1,3 +1,5 @@
+package src;
+
 import java.io.Serializable;
 
 public class User implements Serializable
@@ -10,8 +12,7 @@ public class User implements Serializable
     private byte[] salt;
     private String secretCode;
 
-    public User(String user, String pass, String code, byte[] saltCode)
-    {
+    public User(String user, String pass, String code, byte[] saltCode) {
         this.username = user;
         this.password = pass;
         this.secretCode = code;

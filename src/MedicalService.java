@@ -1,5 +1,6 @@
-import signatures.SignatureUtil;
+package src;
 
+import src.signatures.SignatureUtil;
 import java.nio.charset.StandardCharsets;
 import java.rmi.*;
 import java.security.MessageDigest;
@@ -7,8 +8,8 @@ import java.security.SecureRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public interface MedicalService extends Remote
-{
+public interface MedicalService extends Remote {
+    
     //TODO: Add docs and comments.
 
     Message authenticateUser(Message message) throws Exception;
@@ -17,11 +18,7 @@ public interface MedicalService extends Remote
 
     Message verifyCode(Message message) throws Exception;
 
-    void addUser(String username, String password, String key) throws Exception;
-
     void addUser(Message message) throws Exception;
-
-    boolean userExists(String user) throws Exception;
     
     void createQRimage(Message m) throws Exception;
 

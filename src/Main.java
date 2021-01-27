@@ -1,4 +1,6 @@
-import signatures.SignatureUtil;
+package src;
+
+import src.signatures.SignatureUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,8 +16,8 @@ import java.util.regex.Pattern;
 
 import java.nio.charset.StandardCharsets;
 
-public class Main implements Serializable
-{
+public class Main implements Serializable {
+    
     private static Scanner s = new Scanner(System.in);
     private static MedicalService server;
     private String tempName;
@@ -47,8 +49,7 @@ public class Main implements Serializable
     }
 
 
-    public void mainScreen() throws Exception
-    {
+    public void mainScreen() throws Exception {
         System.out.println("\nWelcome to the Medical Portal!");
         System.out.println("1. Type 'register' to join the MedicalService.");
         System.out.println("2. Type 'login' to sign in to the service");
@@ -63,15 +64,13 @@ public class Main implements Serializable
         }
     }
 
-    private void exit()
-    {
+    private void exit() {
         System.out.println("Exiting the MedicalService...");
         System.out.println("See you next time!");
         System.exit(0);
     }
 
-    private String userInput()
-    {
+    private String userInput() {
         System.out.print("> ");
         return s.nextLine();
     }
@@ -86,8 +85,7 @@ public class Main implements Serializable
      * TODO: Add client authenticating server?
      * @throws Exception
      */
-    private void login() throws Exception
-    {
+    private void login() throws Exception {
         System.out.println("\nLOGIN SYSTEM\n\nEnter username: ");
         denied = false;
         tempName = userInput();
@@ -166,8 +164,7 @@ public class Main implements Serializable
         System.out.println("Confirm password: ");
         tempPass = userInput();
 
-        if(!firstPass.equals(tempPass))
-        {
+        if(!firstPass.equals(tempPass)) {
             System.out.println("\nPasswords do not match\n");
             takeNewPass();
         }
@@ -248,8 +245,7 @@ public class Main implements Serializable
         return signed;
     }
 
-    public static void main(String[] args) throws Exception
-    {
+    public static void main(String[] args) throws Exception {
         try {
             server = (MedicalService) Naming.lookup("rmi://localhost/MedicalService");
             new Main();

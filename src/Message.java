@@ -1,3 +1,5 @@
+package src;
+
 import java.io.Serializable;
 
 public class Message implements Serializable {
@@ -43,9 +45,9 @@ public class Message implements Serializable {
 
     public Message(boolean valid) { this.valid = valid; }
 
-    public Message(User user) {this.user = user; }
+    public Message(User user) { this.user = user; }
 
-    public Message(int status) {this.status = status; }
+    public Message(int status) { this.status = status; }
 
     public Message(int status, int tries) {
         this.status = status;
@@ -61,19 +63,19 @@ public class Message implements Serializable {
      * Obtains a username connected with this request.
      * @return username provided with this request
      */
-    public String getUsername() {return username;}
+    public String getUsername() {return username; }
 
     /**
      * Obtains a User instance supplied with this message.
      * @return User object
      */
-    public User getUser() { return user;}
+    public User getUser() { return user; }
 
     /**
      * obtains a password supplied with this request
      * @return a password associated with this request
      */
-    public String getPassword() { return password;}
+    public String getPassword() { return password; }
 
     /**
      * Indicator of whether a username/ password was successfully
