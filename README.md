@@ -25,11 +25,13 @@ A 2FA service is optional when registering. Two dummy accounts have been set up 
 Username: ```admin```
 Password: ```password```
 Key: ```BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A```
+
 ![admin QR Code](/src/admin.png)
 
 Username: ```testUser```
 Password: ```MyPassword#3456```
 Key: ```MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU```
+
 ![testUser QR Code](/src/testUser.png)
 
 ### TOTP Usage
