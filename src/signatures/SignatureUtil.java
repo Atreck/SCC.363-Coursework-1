@@ -39,8 +39,8 @@ public class SignatureUtil {
         // Keys can be 1024 or 2048-bit long (the longer the harder to crack)
         KeyPair pair = keyGen.generateKeyPair();
 
-        saveInFile("src/Keys/" + user + "/PublicKey", pair.getPublic().getEncoded());
-        saveInFile("src/Keys/" + user + "/PrivateKey", pair.getPrivate().getEncoded());
+        saveInFile("../Keys/" + user + "/PublicKey", pair.getPublic().getEncoded());
+        saveInFile("../Keys/" + user + "/PrivateKey", pair.getPrivate().getEncoded());
 
         return pair;
     }
@@ -77,8 +77,8 @@ public class SignatureUtil {
             throws IOException, InvalidKeySpecException, NoSuchAlgorithmException {
 
         // Find the path of the key pair for a user
-        String path1 = String.format("src/Keys/%s/PrivateKey", user);
-        String path2 = String.format("src/Keys/%s/PublicKey", user);
+        String path1 = String.format("../Keys/%s/PrivateKey", user);
+        String path2 = String.format("../Keys/%s/PublicKey", user);
         // Read the files --> in bytes format
         FileInputStream fis = new FileInputStream(path1);
         FileInputStream fis2 = new FileInputStream(path2);
