@@ -1,20 +1,11 @@
-package src;
+package supercool363;
 
-import src.signatures.SignatureUtil;
+import signatures.SignatureUtil;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.desktop.SystemSleepEvent;
-import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.*;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import java.nio.charset.StandardCharsets;
 
 public class Main implements Serializable {
     

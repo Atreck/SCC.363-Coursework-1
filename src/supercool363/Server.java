@@ -1,4 +1,4 @@
-package src;
+package supercool363;
 
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -7,11 +7,11 @@ import java.security.*;
 import java.util.HashMap;
 import java.util.Random;
 
+import com.google.zxing.qrcode.QRCodeWriter;
 import org.apache.commons.codec.binary.*;
 import de.taimos.totp.*;
-import src.signatures.SignatureUtil;
+import signatures.SignatureUtil;
 
-import com.google.zxing.qrcode.*;
 import com.google.zxing.*;
 import com.google.zxing.common.*;
 import com.google.zxing.client.j2se.*;

@@ -1,4 +1,4 @@
-package src.signatures;
+package signatures;
 
 import java.io.*;
 import java.security.*;

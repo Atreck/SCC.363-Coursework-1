@@ -1,6 +1,6 @@
-package src;
+package supercool363;
 
-import src.signatures.SignatureUtil;
+import signatures.SignatureUtil;
 import java.nio.charset.StandardCharsets;
 import java.rmi.*;
 import java.security.MessageDigest;
