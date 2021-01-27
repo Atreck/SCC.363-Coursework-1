@@ -4,18 +4,19 @@ A third year Computer Science coursework to implement varying degrees of securit
 ## Usage
 To use in its current state, you must have 3 terminals open (2 if using included shell script)
 
-- Open 3(2) terminals and navigate all to the src dir
-```
-cd .\src\
-```
+Console 1:
 - Type ```rmiregistry``` or start the shell script.
-- On another terminal, compile and run the server (commands vary depending on OS and version) this is for Java 13.0.1 on Windows 10
+
+Console 2:
+- Compile and run the server (commands vary depending on OS and version) this is for Java 13.0.1 on Windows 10
 ```java
-javac -cp "lib/*;." *.java;& java -cp "lib/*;." Server
+javac -cp "src/lib/*;." src/*.java;&java -cp "src/lib/*;." src.Server
 ```
-- On the last terminal, compile and run the frontend
+
+Console 3:
+- Compile and run the frontend
 ```java
-javac -cp "lib/*;." *.java;& java -cp "lib/*;." Main
+javac -cp "src/lib/*;." src/*.java;&java -cp "src/lib/*;." src.Main
 ```
 
 ## Two-Factor Authentication Testing
@@ -24,16 +25,18 @@ A 2FA service is optional when registering. Two dummy accounts have been set up 
 Username: ```admin```
 Password: ```password```
 Key: ```BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A```
+![admin QR Code](/src/admin.png)
 
 Username: ```testUser```
 Password: ```MyPassword#3456```
 Key: ```MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU```
+![testUser QR Code](/src/testUser.png)
 
 ### TOTP Usage
-To get the TOTP codes, follow the instructions:
+Now a QR code will be displayed when an account is newly registered. These can be scanned by any authenticator app for ease of access.
+
+Alternatively, to use the TOTP codes, follow the instructions:
 
 - Download an authenticator application on your phone (Google Authenticator works well).
 - Enter the key for the listed account.
 - A 6-digit code will cycle every few seconds, enter that when prompted on the login.
-
-*TODO: Access via QR code*
