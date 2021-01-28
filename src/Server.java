@@ -1,5 +1,3 @@
-package supercool363;
-
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.rmi.Naming;

@@ -1,5 +1,3 @@
-package supercool363;
-
 import signatures.SignatureUtil;
 import java.nio.charset.StandardCharsets;
 import java.rmi.*;
