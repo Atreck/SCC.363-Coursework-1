@@ -26,13 +26,13 @@ Username: ```admin```
 Password: ```password```
 Key: ```BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A```
 
-![admin QR Code](/supercool363/admin.png)
+![admin QR Code](admin.png)
 
 Username: ```testUser```
 Password: ```MyPassword#3456```
 Key: ```MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU```
 
-![testUser QR Code](/supercool363/testUser.png)
+![testUser QR Code](testUser.png)
 
 ### TOTP Usage
 Now a QR code will be displayed when an account is newly registered. These can be scanned by any authenticator app for ease of access.
