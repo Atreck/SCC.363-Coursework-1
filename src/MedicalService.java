@@ -41,7 +41,7 @@ public interface MedicalService extends Remote {
                     p = Pattern.compile("[a-z]");
                     m = p.matcher(input);
 
-                    if ((m.find()) && (input.length() > 10)) return true;
+                    if ((m.find()) && (input.length() > 9)) return true;
                 }
 
             }
