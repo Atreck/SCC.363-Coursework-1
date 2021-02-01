@@ -77,8 +77,8 @@ public class SignatureUtil {
             throws IOException, InvalidKeySpecException, NoSuchAlgorithmException {
 
         // Find the path of the key pair for a user
-        String path1 = String.format("src/Keys/%s/PrivateKey", user);
-        String path2 = String.format("src/Keys/%s/PublicKey", user);
+        String path1 = String.format("Keys/%s/PrivateKey", user);
+        String path2 = String.format("Keys/%s/PublicKey", user);
         // Read the files --> in bytes format
         FileInputStream fis = new FileInputStream(path1);
         FileInputStream fis2 = new FileInputStream(path2);
