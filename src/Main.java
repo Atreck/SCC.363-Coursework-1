@@ -1,4 +1,4 @@
-import signatures.SignatureUtil;
+import signatures.SignUtil;
 
 import java.io.Serializable;
 import java.rmi.*;
@@ -23,12 +23,10 @@ public class Main implements Serializable {
     private final String LOGIN = "login";
     private final String EXIT = "exit";
 
-    private final int PASS_INCORRECT = 2;
-    private final int PASS_CORRECT = 3;
+    private final int CREDENTIALS_OK = 2;
+    private final int CREDENTIALS_BAD = 3;
     private final int CODE_INCORRECT = 4;
     private final int CODE_CORRECT = 5;
-    private final int SIGN_CORRECT = 6;
-    private final int SIGN_INCORRECT = 7;
     private final int LOCKED = 8;
 
     //TODO: Add docs and comments.
@@ -75,50 +73,35 @@ public class Main implements Serializable {
      * @throws Exception
      */
     private void login() throws Exception {
-        System.out.println("\nLOGIN SYSTEM\n\nEnter username: ");
         denied = false;
+        System.out.println("\nLOGIN SYSTEM\n\nEnter username: ");
         tempName = userInput();
+        System.out.println("Enter password:");
+        tempPass = userInput();
 
-        msg = new Message(tempName, null);
-        response = server.validateUsername(msg);
-        if (response.isValid())    // meaning username does not exist
-            denied = true;
-        else {
-            msg = new Message(tempName, null, this);
-
-            response = server.authenticateUser(msg);
-            status = response.getStatus();
-        }
-        if (status == SIGN_CORRECT | denied) {
-            // Add server challenge as well?
-            // Proceed to password verification
-            response = takePass();
-            status = response.getStatus();
-            while (status == PASS_INCORRECT | denied) {
-                System.out.println("Invalid username/password. Tries remaining: " + response.getTries());
-                response = takePass();
-                status = response.getStatus();
-            }
-            
-            checkLocked(status);        //check if the account hasn't been locked
+        msg = new Message(tempName, tempPass, this);
+        response = server.authenticateUser(msg);
+        if (response.getStatus() == CREDENTIALS_OK) {
             response = takeCode();      // proceed with code verification
             status = response.getStatus();
             while (status == CODE_INCORRECT) {
-                System.out.println("Code incorrect, please try again. Tries remaining: " + response.getTries());
+                System.out.println("\n\n<Code incorrect, please try again.>");
                 response = takeCode();
                 status = response.getStatus();
             }
 
-            checkLocked(status);       // check again if the account has not been locked
+            checkLocked(status);       // check if the account has been locked
             // Finally if everything went gucci obtain the user object for the requested user
             if (status == CODE_CORRECT) {
                 this.currentUser = response.getUser();
                 System.out.println("Welcome " + currentUser.getUsername() + "!");
             }
-
-        } else if (status == SIGN_INCORRECT) {
-            //Love it <3
-            System.out.println("There is an impostor among us.");
+        } else if (response.getStatus() == CREDENTIALS_BAD) {
+            System.out.println("\n\n<Login error - incorrect credentials.>");
+            login();
+        } else {
+            System.out.println("\n\n<There is an impostor among us.>");
+            checkLocked(response.getStatus());
         }
     }
 
@@ -130,6 +113,7 @@ public class Main implements Serializable {
         }
     }
 
+    // TODO: might want to redesign so that users do not choose the username themselves but are rather assigned some IDs
     private void register() throws Exception
     {
         denied = false;
@@ -174,21 +158,21 @@ public class Main implements Serializable {
         }
     }
 
-    private Message takePass() throws Exception {   //login password
-        System.out.println("Enter password:");
-        tempPass = userInput();
-
-        if(!denied) {
-            msg = new Message(tempName, tempPass);
-            response = server.verifyPassword(msg);
-        } else {
-            if(fakeTries == 0)
-                checkLocked(LOCKED);
-            response = new Message(PASS_INCORRECT, fakeTries--);
-        }
-        return response;
-//        System.out.println("LOGGED IN");
-    }
+//    private Message takePass() throws Exception {   //login password
+//        System.out.println("Enter password:");
+//        tempPass = userInput();
+//
+//        if(!denied) {
+//            msg = new Message(tempName, tempPass);
+//            response = server.verifyPassword(msg);
+//        } else {
+//            if(fakeTries == 0)
+//                checkLocked(LOCKED);
+//            response = new Message(PASS_INCORRECT, fakeTries--);
+//        }
+//        return response;
+////        System.out.println("LOGGED IN");
+//    }
 
     private Message takeCode() throws Exception {   //login auth
         System.out.println("\nPlease enter your 6-digit authentication code:");
@@ -227,12 +211,16 @@ public class Main implements Serializable {
         mainScreen();
     }
 
-    public String signChallenge(String challenge) throws Exception {    
-        System.out.println(tempName);
-        PrivateKey privKey = SignatureUtil.retrieveKeys(tempName, SignatureUtil.ALGO_NAME).getPrivate();
-        String signed = SignatureUtil.signChallenge(challenge, privKey);
+    public String signChallenge(String challenge) throws Exception {
+//        System.out.println(tempName);
+        PrivateKey privKey = SignUtil.retrieveKeys(tempName, SignUtil.ALGO_NAME).getPrivate();
+        String signed = SignUtil.signChallenge(challenge, privKey);
         return signed;
     }
+
+//    public boolean authenticateServer(String signedChallenge) {
+//
+//    }
 
     public static void main(String[] args) throws Exception {
         try {

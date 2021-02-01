@@ -18,7 +18,7 @@ import java.util.Base64;
  *  simplified version to aid the development process.
  */
 
-public class SignatureUtil {
+public class SignUtil {
 
     private static final String ALGO_TYPE = "SHA256WithDSA";  //Maybe change it to SHA256withRSA later (slower but more robust)
     public static final String ALGO_NAME = "DSA";
@@ -77,8 +77,13 @@ public class SignatureUtil {
             throws IOException, InvalidKeySpecException, NoSuchAlgorithmException {
 
         // Find the path of the key pair for a user
+
+// -------------------- FOR VS CODE ---------------------------------
         String path1 = String.format("Keys/%s/PrivateKey", user);
         String path2 = String.format("Keys/%s/PublicKey", user);
+// -------------------- FOR INTELLIJ --------------------------------
+//        String path1 = String.format("src/Keys/%s/PrivateKey", user);
+//        String path2 = String.format("src/Keys/%s/PublicKey", user);
         // Read the files --> in bytes format
         FileInputStream fis = new FileInputStream(path1);
         FileInputStream fis2 = new FileInputStream(path2);
@@ -181,11 +186,11 @@ public class SignatureUtil {
     /* Comment and uncomment depending on the need
         (should be a one-time use only for creating the server's key pair)
    */
-    public static void main (String[] args) {
-        try {
-            SignatureUtil.genKeyPair(ALGO_NAME, "server");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-    }
+//    public static void main (String[] args) {
+//        try {
+//            SignatureUtil.genKeyPair(ALGO_NAME, "server");
+//        } catch (NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//        }
+//    }
 }

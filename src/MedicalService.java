@@ -1,4 +1,5 @@
-import signatures.SignatureUtil;
+import com.google.zxing.oned.rss.expanded.decoders.AbstractExpandedDecoder;
+import signatures.SignUtil;
 import java.nio.charset.StandardCharsets;
 import java.rmi.*;
 import java.security.MessageDigest;
@@ -12,7 +13,7 @@ public interface MedicalService extends Remote {
 
     Message authenticateUser(Message message) throws Exception;
 
-    Message verifyPassword(Message message) throws Exception;
+    int verifyPassword(String username, String password) throws Exception;
 
     Message verifyCode(Message message) throws Exception;
 
@@ -20,9 +21,15 @@ public interface MedicalService extends Remote {
     
     void createQRimage(Message m) throws Exception;
 
+    boolean validateUsername(String username) throws Exception;
+
     Message validateUsername(Message message) throws Exception;
 
     Message validatePassword(Message message) throws Exception;
+
+    boolean challengeUser(Main client, String username) throws Exception;
+
+    String signChallenge(String challenge) throws Exception;
 
     default boolean strengthCheck(String input) throws Exception {
         Pattern p = Pattern.compile("[^A-Za-z0-9 ]"); // Find character not in that list
@@ -52,7 +59,7 @@ public interface MedicalService extends Remote {
     default void register(String user, String pass) throws Exception {
         System.out.println("User created with username: " + user + " and password: " + pass);
         // Generate a key pair for the newly added user
-        SignatureUtil.genKeyPair(SignatureUtil.ALGO_NAME, user);
+        SignUtil.genKeyPair(SignUtil.ALGO_NAME, user);
     }
 
     default String saltPass(String pass) throws Exception {
