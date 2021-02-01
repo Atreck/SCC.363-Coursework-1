@@ -130,7 +130,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String password = message.getPassword();
         String key = message.getCode();
 
-        database.put(username, new User(username, password, key));
+//        database.put(username, new User(username, password, key));
         register(username, password);
     }
 

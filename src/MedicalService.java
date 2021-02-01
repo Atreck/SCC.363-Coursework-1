@@ -1,9 +1,13 @@
 import com.google.zxing.oned.rss.expanded.decoders.AbstractExpandedDecoder;
 import signatures.SignUtil;
+
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.rmi.*;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.security.spec.KeySpec;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,23 +67,17 @@ public interface MedicalService extends Remote {
     }
 
     default String saltPass(String pass) throws Exception {
-        MessageDigest digest;
-
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (Exception e) {
-            //TODO: handle exception
-            return null;
-        }
+        // https://www.baeldung.com/java-password-hashing
 
         SecureRandom random = new SecureRandom();
 
         byte[] salt = new byte[16];
         random.nextBytes(salt);
 
-        digest.update(salt);
+        KeySpec spec = new PBEKeySpec(pass.toCharArray(), salt, 65536, 128);
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
 
-        byte[] hashed = digest.digest(pass.getBytes(StandardCharsets.UTF_8));
+        byte[] hashed = factory.generateSecret(spec).getEncoded();
 
         StringBuilder stringBuilder = new StringBuilder();
         for (byte b : hashed)
