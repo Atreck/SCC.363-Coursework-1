@@ -23,7 +23,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
     private static HashMap<String, User> database = new HashMap<>();
     private String tempUsername;
-    private final int CHALLENGE_LEN = 50;
+    public static final int CHALLENGE_LEN = 50;
     private final int PASS_OK = 1;
     private final int CREDENTIALS_OK = 2;
     private final int CREDENTIALS_BAD = 3;
@@ -70,6 +70,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     }
 
     public String signChallenge(String challenge) throws Exception {
+        System.out.println("** Signing challenge sent by a user");
         PrivateKey privKey = SignUtil.retrieveKeys("server", SignUtil.ALGO_NAME).getPrivate();
         String signed = SignUtil.signChallenge(challenge, privKey);
         return signed;

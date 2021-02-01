@@ -1,12 +1,13 @@
 import signatures.SignUtil;
 
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.rmi.*;
 import java.security.*;
 import java.util.*;
 
 public class Main implements Serializable {
-    
+
     private static Scanner s = new Scanner(System.in);
     private static MedicalService server;
     private String tempName;
@@ -79,6 +80,11 @@ public class Main implements Serializable {
         System.out.println("Enter password:");
         tempPass = userInput();
 
+        boolean itsServer = authenticateServer();
+        if (!itsServer) {
+            System.out.println("Burn your hard drive and run away cos it is not the MedicalService");
+            System.exit(0);
+        }
         msg = new Message(tempName, tempPass, this);
         response = server.authenticateUser(msg);
         if (response.getStatus() == CREDENTIALS_OK) {
@@ -158,22 +164,6 @@ public class Main implements Serializable {
         }
     }
 
-//    private Message takePass() throws Exception {   //login password
-//        System.out.println("Enter password:");
-//        tempPass = userInput();
-//
-//        if(!denied) {
-//            msg = new Message(tempName, tempPass);
-//            response = server.verifyPassword(msg);
-//        } else {
-//            if(fakeTries == 0)
-//                checkLocked(LOCKED);
-//            response = new Message(PASS_INCORRECT, fakeTries--);
-//        }
-//        return response;
-////        System.out.println("LOGGED IN");
-//    }
-
     private Message takeCode() throws Exception {   //login auth
         System.out.println("\nPlease enter your 6-digit authentication code:");
         System.out.println("--> Type 'none' if you don't have one");        // dummy value tbf as it is not checked
@@ -218,9 +208,16 @@ public class Main implements Serializable {
         return signed;
     }
 
-//    public boolean authenticateServer(String signedChallenge) {
-//
-//    }
+    public boolean authenticateServer() throws Exception {
+        byte[] array = new byte[Server.CHALLENGE_LEN];
+        new Random().nextBytes(array);
+        String challenge = new String(array, Charset.forName("UTF-8"));
+        String signed = server.signChallenge(challenge);
+        PublicKey pubKey = SignUtil.retrieveKeys("server", SignUtil.ALGO_NAME).getPublic();
+        boolean signCorrect = SignUtil.verifyChallenge(signed, challenge, pubKey);
+
+        return signCorrect;
+    }
 
     public static void main(String[] args) throws Exception {
         try {
