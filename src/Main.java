@@ -86,6 +86,10 @@ public class Main implements Serializable {
             System.exit(0);
         }
         msg = new Message(tempName, tempPass, this);
+        //TODO: encrypt the message (another keypair will be needed bleh)
+        /*to be fair for simplicity we will use the same key pair, but need to
+        *include in the report that in the production normally there would be a different key pair
+         */
         response = server.authenticateUser(msg);
         if (response.getStatus() == CREDENTIALS_OK) {
             response = takeCode();      // proceed with code verification

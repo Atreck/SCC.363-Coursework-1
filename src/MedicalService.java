@@ -3,9 +3,7 @@ import signatures.SignUtil;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.rmi.*;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.spec.KeySpec;
 import java.util.regex.Matcher;
