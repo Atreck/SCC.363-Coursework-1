@@ -1,13 +1,14 @@
-import java.io.IOException;
+package main;
+
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.rmi.Naming;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Random;
 
 import com.google.zxing.qrcode.QRCodeWriter;
+import encryption.CryptUtil;
 import org.apache.commons.codec.binary.*;
 import de.taimos.totp.*;
 import signatures.SignUtil;
@@ -62,7 +63,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         new Random().nextBytes(array);
         String challenge = new String(array, Charset.forName("UTF-8"));
         String signedChallenge = client.signChallenge(challenge);
-        PublicKey pubKey = SignUtil.retrieveKeys(username, SignUtil.ALGO_NAME).getPublic();
+        PublicKey pubKey = CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, username);
         boolean signCorrect = SignUtil.verifyChallenge(signedChallenge, challenge, pubKey);
         System.out.println("** Challenge correctly signed: " + signCorrect);
 
@@ -71,7 +72,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
     public String signChallenge(String challenge) throws Exception {
         System.out.println("** Signing challenge sent by a user");
-        PrivateKey privKey = SignUtil.retrieveKeys("server", SignUtil.ALGO_NAME).getPrivate();
+        PrivateKey privKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server");
         String signed = SignUtil.signChallenge(challenge, privKey);
         return signed;
     }
@@ -130,7 +131,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String password = message.getPassword();
         String key = message.getCode();
 
-//        database.put(username, new User(username, password, key));
+        database.put(username, new User(username, password, key));
         register(username, password);
     }
 

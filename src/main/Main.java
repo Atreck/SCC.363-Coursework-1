@@ -1,3 +1,6 @@
+package main;
+
+import encryption.CryptUtil;
 import signatures.SignUtil;
 
 import java.io.Serializable;
@@ -207,7 +210,7 @@ public class Main implements Serializable {
 
     public String signChallenge(String challenge) throws Exception {
 //        System.out.println(tempName);
-        PrivateKey privKey = SignUtil.retrieveKeys(tempName, SignUtil.ALGO_NAME).getPrivate();
+        PrivateKey privKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempName);
         String signed = SignUtil.signChallenge(challenge, privKey);
         return signed;
     }
@@ -217,7 +220,7 @@ public class Main implements Serializable {
         new Random().nextBytes(array);
         String challenge = new String(array, Charset.forName("UTF-8"));
         String signed = server.signChallenge(challenge);
-        PublicKey pubKey = SignUtil.retrieveKeys("server", SignUtil.ALGO_NAME).getPublic();
+        PublicKey pubKey = CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, "server");
         boolean signCorrect = SignUtil.verifyChallenge(signed, challenge, pubKey);
 
         return signCorrect;

@@ -1,4 +1,6 @@
-import com.google.zxing.oned.rss.expanded.decoders.AbstractExpandedDecoder;
+package main;
+
+import encryption.CryptUtil;
 import signatures.SignUtil;
 
 import javax.crypto.SecretKeyFactory;
@@ -61,7 +63,7 @@ public interface MedicalService extends Remote {
     default void register(String user, String pass) throws Exception {
         System.out.println("User created with username: " + user + " and password: " + pass);
         // Generate a key pair for the newly added user
-        SignUtil.genKeyPair(SignUtil.ALGO_NAME, user);
+        CryptUtil.genKeyPair(CryptUtil.ALGO_NAME, user);
     }
 
     default String saltPass(String pass) throws Exception {
