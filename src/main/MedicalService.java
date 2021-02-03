@@ -3,6 +3,7 @@ package main;
 import encryption.CryptUtil;
 import signatures.SignUtil;
 
+import javax.crypto.SealedObject;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.rmi.*;
@@ -15,11 +16,11 @@ public interface MedicalService extends Remote {
     
     //TODO: Add docs and comments.
 
-    Message authenticateUser(Message message) throws Exception;
+    SafeMessage authenticateUser(SafeMessage obj) throws Exception;
 
     int verifyPassword(String username, String password) throws Exception;
 
-    Message verifyCode(Message message) throws Exception;
+    SafeMessage verifyCode(SafeMessage obj) throws Exception;
 
     void addUser(Message message) throws Exception;
     

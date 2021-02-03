@@ -3,10 +3,14 @@ package main;
 import encryption.CryptUtil;
 import signatures.SignUtil;
 
+import javax.crypto.SealedObject;
+import javax.crypto.SecretKey;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.rmi.*;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 
 public class Main implements Serializable {
@@ -93,7 +97,13 @@ public class Main implements Serializable {
         /*to be fair for simplicity we will use the same key pair, but need to
         *include in the report that in the production normally there would be a different key pair
          */
-        response = server.authenticateUser(msg);
+        SafeMessage encryptedMsg = prepMessage(msg);
+        SafeMessage sealedResponse = server.authenticateUser(encryptedMsg);
+
+        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempName);
+        SecretKey decryptedKey = CryptUtil.decrypt(sealedResponse.getSecretKeyEncrypted(), userPrivKey);
+
+        response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
         if (response.getStatus() == CREDENTIALS_OK) {
             response = takeCode();      // proceed with code verification
             status = response.getStatus();
@@ -171,14 +181,28 @@ public class Main implements Serializable {
         }
     }
 
+    private SafeMessage prepMessage(Message msg) throws Exception {
+        PublicKey serverPublicKey = CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, "server");
+        SecretKey newKey = CryptUtil.genSecretKey();
+        SealedObject response = CryptUtil.encrypt(msg, newKey);
+        byte[] encryptedKey = CryptUtil.encrypt(newKey, serverPublicKey);
+
+        return new SafeMessage(response, encryptedKey);
+    }
+
     private Message takeCode() throws Exception {   //login auth
         System.out.println("\nPlease enter your 6-digit authentication code:");
         System.out.println("--> Type 'none' if you don't have one");        // dummy value tbf as it is not checked
 //        System.out.println("Type 'cancel' to go back to the main menu.");
         String code = userInput();
         msg = new Message(tempName, code);
-        response = server.verifyCode(msg);
+        SafeMessage safeMessage = prepMessage(msg);
 
+        SafeMessage encryptedResponse = server.verifyCode(safeMessage);
+        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempName);
+        SecretKey decryptedKey = CryptUtil.decrypt(encryptedResponse.getSecretKeyEncrypted(), userPrivKey);
+
+        Message response = CryptUtil.decrypt(encryptedResponse.getObj(), decryptedKey);
         return response;
     }
 

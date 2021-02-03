@@ -17,6 +17,8 @@ import com.google.zxing.*;
 import com.google.zxing.common.*;
 import com.google.zxing.client.j2se.*;
 
+import javax.crypto.SealedObject;
+import javax.crypto.SecretKey;
 import java.nio.file.*;
 public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService {
 
@@ -38,7 +40,10 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         addUser(new Message("testUser", "MyPassword#3456", "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
-    public Message authenticateUser(Message data) throws Exception {
+    public SafeMessage authenticateUser(SafeMessage safeMessage) throws Exception {
+        PrivateKey serverPrivateKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server");
+        SecretKey secretKey = CryptUtil.decrypt(safeMessage.getSecretKeyEncrypted(), serverPrivateKey);
+        Message data = CryptUtil.decrypt(safeMessage.getObj(), secretKey);
         // Extract data from the message
         Main client = data.getClient();
         String username = data.getUsername();
@@ -46,14 +51,33 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
         System.out.println("** Authenticating user: " + username);
         boolean signCorrect = challengeUser(client, username);
-        if (!signCorrect) return new Message(CREDENTIALS_BAD);
+        if (!signCorrect) {
+            Message msg = new Message(CREDENTIALS_BAD);
+            return prepResponse(msg, username);
+        }
 
         boolean username_valid = this.validateUsername(username);
         int pass_valid = this.verifyPassword(username, pass);
         if (username_valid && pass_valid == PASS_OK) {
-            return new Message(CREDENTIALS_OK);
-        } else if (pass_valid == LOCKED) return new Message(LOCKED);
-        else return new Message(CREDENTIALS_BAD);
+            Message msg = new Message(CREDENTIALS_OK);
+            return prepResponse(msg, username);
+        } else if (pass_valid == LOCKED) {
+            Message msg = new Message(LOCKED);
+            return prepResponse(msg, username);
+        }
+        else {
+            Message msg = new Message(CREDENTIALS_BAD);
+            return prepResponse(msg, username);
+        }
+    }
+
+    public SafeMessage prepResponse(Message msg, String username) throws Exception {
+        PublicKey userPublicKey = CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, username);
+        SecretKey newKey = CryptUtil.genSecretKey();
+        SealedObject response = CryptUtil.encrypt(msg, newKey);
+        byte[] encryptedKey = CryptUtil.encrypt(newKey, userPublicKey);
+
+        return new SafeMessage(response, encryptedKey);
     }
 
     public boolean challengeUser(Main client, String username) throws Exception {
@@ -99,7 +123,10 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return PASS_OK;
     }
 
-    public Message verifyCode(Message message) throws Exception {
+    public SafeMessage verifyCode(SafeMessage safeMessage) throws Exception {
+        PrivateKey serverPrivateKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server");
+        SecretKey secretKey = CryptUtil.decrypt(safeMessage.getSecretKeyEncrypted(), serverPrivateKey);
+        Message message = CryptUtil.decrypt(safeMessage.getObj(), secretKey);
         String username = message.getUsername();
         String code = message.getPassword();  // password field can be used to carry code as well
 
@@ -114,16 +141,19 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
                     //Add implementation in Server.java to lock out user using the lockUser() method
                     lockUser(username);
                     System.out.println("** Incorrect code - account has been locked for user: " + username);
-                    return new Message(LOCKED);
+                    Message msg = new Message(LOCKED);
+                    return prepResponse(msg, username);
                 }
                 System.out.println("** Incorrect code for user: " + username);
-                return new Message(CODE_INCORRECT, user.getTries());
+                Message msg = new Message(CODE_INCORRECT, user.getTries());
+                return prepResponse(msg, username);
             }
         }
         // reset the tries
         user.setTries(3);
         System.out.println("** Verification code correct for user: " + username);
-        return new Message(CODE_CORRECT, user);
+        Message msg = new Message(CODE_CORRECT, user);
+        return prepResponse(msg, username);
     }
 
     public void addUser(Message message) throws Exception {
