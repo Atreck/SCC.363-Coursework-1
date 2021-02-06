@@ -32,7 +32,7 @@ public interface MedicalService extends Remote {
 
     Message validatePassword(Message message) throws Exception;
 
-    boolean challengeUser(Main client, String username) throws Exception;
+    boolean challengeUser(Frontend client, String username) throws Exception;
 
     String signChallenge(String challenge) throws Exception;
 

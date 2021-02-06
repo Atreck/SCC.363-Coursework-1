@@ -125,7 +125,7 @@ public class CryptUtil {
             InvalidKeySpecException, IOException {
 
         // -------------------- FOR VS CODE ---------------------------------
-        String path = String.format("Keys/%s/PublicKey", username);
+        String path = String.format("   %s/PublicKey", username);
         // -------------------- FOR INTELLIJ --------------------------------
 //        String path = String.format("src/Keys/%s/PublicKey", username);
 

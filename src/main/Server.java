@@ -45,7 +45,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         SecretKey secretKey = CryptUtil.decrypt(safeMessage.getSecretKeyEncrypted(), serverPrivateKey);
         Message data = CryptUtil.decrypt(safeMessage.getObj(), secretKey);
         // Extract data from the message
-        Main client = data.getClient();
+        Frontend client = data.getClient();
         String username = data.getUsername();
         String pass = data.getPassword();
 
@@ -80,7 +80,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return new SafeMessage(response, encryptedKey);
     }
 
-    public boolean challengeUser(Main client, String username) throws Exception {
+    public boolean challengeUser(Frontend client, String username) throws Exception {
         // Challenge the user
         System.out.println("** Challenging user: " + username);
         byte[] array = new byte[CHALLENGE_LEN];

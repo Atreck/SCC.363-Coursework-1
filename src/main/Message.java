@@ -15,7 +15,7 @@ public class Message implements Serializable {
     private String code;
     private boolean valid;
     private User user;
-    private Main client;
+    private Frontend client;
     private int status;
     private int tries;
 
@@ -31,7 +31,7 @@ public class Message implements Serializable {
         this.password = password;
     }
 
-    public Message(String username, String password, Main client) {
+    public Message(String username, String password, Frontend client) {
         this.username = username;
         this.password = password;
         this.client = client;
@@ -87,7 +87,7 @@ public class Message implements Serializable {
         return valid;
     }
 
-    public Main getClient() {
+    public Frontend getClient() {
         return client;
     }
 
