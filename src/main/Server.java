@@ -39,7 +39,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
     public Server() throws Exception {
         super();
-//        addUser(new Message("admin", "password", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A"));
+//        addAdmin("admin", "Joe", "Admindoe", "superUser89@pass", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
 //        addUser(new Message("testUser", "MyPassword#3456", "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
@@ -175,6 +175,27 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             return REGISTRATION_SUCCESS;
         }
         return REGISTRATION_FAIL;
+    }
+
+    public void addAdmin(String username, String name, String surname, String password, String code) throws Exception {
+        String email = name.substring(0, 1) + surname + "@mediservice.com";
+
+//        createQRimage(username, code);
+        boolean passStrong = strengthCheck(password);
+        if (!passStrong) {
+            System.out.println("** Admin registration failed - pass too weak");
+            return;
+        }
+
+        boolean userExists = RecordsUtil.userExists(username);
+        if (!userExists) {
+            RecordsUtil.addAdmin(username, name, surname, email, password, code);
+            register(username);
+            System.out.println("** Admin registration successful with username: " + username);
+            return;
+        }
+        System.out.println("** Admin registration failed, account with such username may already exist.");
+
     }
 
     public String secretKeyGen() throws Exception {

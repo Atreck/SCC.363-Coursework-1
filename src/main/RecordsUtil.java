@@ -172,6 +172,41 @@ public class RecordsUtil {
         pw2.close();
     }
 
+
+    public static void addAdmin(
+            String username, String name, String surname, String email,
+            String password, String code)
+            throws Exception {
+
+        String salt = CryptUtil.genSalt().toString();
+        String saltedPass = CryptUtil.saltPass(password, salt);
+
+        JSONObject jo = new JSONObject();
+
+        jo.put("name", name);
+        jo.put("surname", surname);
+        jo.put("email", email);
+        jo.put("passHash", saltedPass);
+        jo.put("salt", salt);
+        jo.put("authKey", code);
+        jo.put("tries", 3);
+
+        PrintWriter pw = new PrintWriter(String.format("src/Users/Admins/%s.json", username));
+        pw.write(jo.toJSONString());
+        pw.flush();
+        pw.close();
+
+        // add to user -> group mapping file
+        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        // typecasting obj to JSONObject
+        JSONObject jo2 = (JSONObject) obj;
+        PrintWriter pw2 = new PrintWriter("src/Users/users.json");
+        jo2.put(username, "Admins");
+        pw2.write(jo2.toJSONString());
+        pw2.flush();
+        pw2.close();
+    }
+
     public static void main(String[] args) throws Exception {
 
 //        // creating JSONObject
