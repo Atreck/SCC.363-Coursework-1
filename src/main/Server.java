@@ -25,7 +25,12 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
     //TODO: Add docs and comments.
 
-    private static HashMap<String, HashSet<String>> activeUsers = new HashMap<>();
+    // serving as a cache for active users (user, their permissions)
+    /* We could even add a separate thread when the server is starting to loop through active users and check
+    ** (by storing timestamps for example?) when the last time they performed any kind of action was - if
+    ** current timestamp - last_accessed >= timeout ----> log out a user
+     */
+    private static HashMap<String, HashSet<Long>> activeUsers = new HashMap<>();
     private String tempUsername;
     public static final int CHALLENGE_LEN = 50;
     private static final int PASS_OK = 1;
@@ -39,8 +44,8 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
     public Server() throws Exception {
         super();
-//        addAdmin("admin", "Joe", "Admindoe", "superUser89@pass", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
-//        addUser(new Message("testUser", "MyPassword#3456", "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
+        addAdmin("admin", "Joe", "Admindoe", "superUser89@pass", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
+        addPatient(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
     public SafeMessage authenticateUser(SafeMessage safeMessage) throws Exception {
@@ -64,6 +69,10 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         System.out.println("** Username valid: " + username_valid);
         int pass_valid = this.verifyPassword(username, pass);
         if (username_valid && pass_valid == PASS_OK) {
+            // add to active users cache
+            // now can just look up if a user is in active users (so is logged in)
+            // and on subsequent calls to do an action (read records) etc we can just check whether the set
+            // the permissions which allow them to perform certain actions
             Message msg = new Message(CREDENTIALS_OK);
             return prepResponse(msg, username);
         } else if (pass_valid == LOCKED) {
@@ -149,7 +158,9 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             return prepResponse(msg, username);
         }
         System.out.println("** Verification code correct for user: " + username);
-        Message msg = new Message(CODE_CORRECT);
+        Context context = RecordsUtil.getContext(username);
+        activeUsers.put(username, context.getPermissions());
+        Message msg = new Message(CODE_CORRECT, context.getGroup());
         return prepResponse(msg, username);
     }
 
@@ -161,7 +172,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String surname = message.getSurname();
         String code = message.getCode();
 
-        if (code != null) {
+        if (!code.equals("none")) {
             createQRimage(username, code);
         }
 
@@ -178,9 +189,12 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     }
 
     public void addAdmin(String username, String name, String surname, String password, String code) throws Exception {
+        // first letter of a name + surname + @mediservice.com to create staff emails
         String email = name.substring(0, 1) + surname + "@mediservice.com";
 
-//        createQRimage(username, code);
+//      Commented out as there was a qr image already created for this one
+//        String key = secretKeyGen();
+//      createQRimage(username, code);
         boolean passStrong = strengthCheck(password);
         if (!passStrong) {
             System.out.println("** Admin registration failed - pass too weak");

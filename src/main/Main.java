@@ -118,6 +118,8 @@ public class Main implements Serializable {
             //TODO: Add context class to represent a context for a user
             if (status == CODE_CORRECT) {
                 System.out.println("Welcome " + tempUsername + "!");
+                // helper
+                System.out.print("Your group: " + response.getGroup());
             }
         } else if (response.getStatus() == CREDENTIALS_BAD) {
             System.out.println("\n\n<Login error - incorrect credentials.>");

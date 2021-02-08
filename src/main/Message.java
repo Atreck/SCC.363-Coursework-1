@@ -16,6 +16,7 @@ public class Message implements Serializable {
     private String surname;
     private String email;
     private String code;
+    private String group;
     private boolean valid;
     private Main client;
     private int status;
@@ -56,6 +57,11 @@ public class Message implements Serializable {
     public Message(boolean valid) { this.valid = valid; }
 
     public Message(int status) { this.status = status; }
+
+    public Message(int status, String group) {
+        this.status = status;
+        this.group = group;
+    }
 
     /**
      * Obtains a username connected with this request.
@@ -101,5 +107,9 @@ public class Message implements Serializable {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getGroup() {
+        return group;
     }
 }

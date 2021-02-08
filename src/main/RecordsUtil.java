@@ -8,9 +8,12 @@ import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Iterator;
 
 public class RecordsUtil {
 
@@ -35,7 +38,30 @@ public class RecordsUtil {
     private static final int CAN_READ_LOGS = 12;
 
 
-    public static void checkPermission(int user_id, int permission) {;}
+    public static Context getContext(String username) throws IOException, ParseException {
+        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        JSONObject jo1 = (JSONObject) obj1;
+        String group = (String) jo1.get(username);
+
+        // now check permissions associated with that group
+        Object obj = new JSONParser().parse(new FileReader("src/Users/permissions.json"));
+        JSONObject jo = (JSONObject) obj;
+
+        HashSet<Long> permissions = new HashSet<>();
+
+        JSONArray ja = (JSONArray) jo.get(group);
+
+        // iterating phoneNumbers
+        Iterator itr2 = ja.iterator();
+
+        while (itr2.hasNext())
+        {
+            long permission = (long) itr2.next();
+            permissions.add(permission);
+        }
+
+        return new Context(group, permissions);
+    }
 
     public static boolean userExists(String username) throws IOException, ParseException {
         Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));

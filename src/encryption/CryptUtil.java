@@ -264,7 +264,7 @@ public class CryptUtil {
 
     public static byte[] genSalt() {
         SecureRandom random = new SecureRandom();
-        byte[] salt = new byte[16];
+        byte[] salt = new byte[32];
         random.nextBytes(salt);
 
         return salt;
