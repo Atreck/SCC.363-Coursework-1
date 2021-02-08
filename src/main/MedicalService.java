@@ -22,15 +22,9 @@ public interface MedicalService extends Remote {
 
     SafeMessage verifyCode(SafeMessage obj) throws Exception;
 
-    void addUser(Message message) throws Exception;
-    
-    void createQRimage(Message m) throws Exception;
+    int addPatient(Message message) throws Exception;
 
     boolean validateUsername(String username) throws Exception;
-
-    Message validateUsername(Message message) throws Exception;
-
-    Message validatePassword(Message message) throws Exception;
 
     boolean challengeUser(Main client, String username) throws Exception;
 
@@ -61,37 +55,15 @@ public interface MedicalService extends Remote {
         return false;
     }
 
-    default void register(String user, String pass) throws Exception {
-        System.out.println("User created with username: " + user + " and password: " + pass);
+    default void register(String user) throws Exception {
+        System.out.println("User created with username: " + user);
         // Generate a key pair for the newly added user
         CryptUtil.genKeyPair(CryptUtil.ALGO_NAME, user);
     }
 
-    default String saltPass(String pass) throws Exception {
-        // https://www.baeldung.com/java-password-hashing
-
-        SecureRandom random = new SecureRandom();
-
-        byte[] salt = new byte[16];
-        random.nextBytes(salt);
-
-        KeySpec spec = new PBEKeySpec(pass.toCharArray(), salt, 65536, 128);
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-
-        byte[] hashed = factory.generateSecret(spec).getEncoded();
-
-        StringBuilder stringBuilder = new StringBuilder();
-        for (byte b : hashed)
-            stringBuilder.append(String.format("%02x", b));
-
-        String encodedPassword = stringBuilder.toString();
-
-        return encodedPassword;
-    }
-
     String secretKeyGen() throws Exception;
 
-    String TOTPcode(String secretKey) throws Exception;
+    void createQRimage(String username, String code) throws Exception;
     
     void lockUser(String user) throws Exception;
 }

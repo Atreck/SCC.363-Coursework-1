@@ -18,14 +18,14 @@ public class Main implements Serializable {
     private static Scanner s = new Scanner(System.in);
     private static MedicalService server;
     private String tempName;
+    private String tempUsername;
+    private String tempSurname;
+    private String tempMail;
     private static String tempPass;
     private static String firstPass;
     private int status;
     private Message msg;
     private Message response;
-    private User currentUser;
-    private Boolean denied;
-    private int fakeTries = 2;
 
     private final String REGISTER = "register";
     private final String LOGIN = "login";
@@ -36,6 +36,8 @@ public class Main implements Serializable {
     private final int CODE_INCORRECT = 4;
     private final int CODE_CORRECT = 5;
     private final int LOCKED = 8;
+    private final int REGISTRATION_SUCCESS = 9;
+    private final int REGISTRATION_FAIL = 10;
 
     //TODO: Add docs and comments.
 
@@ -77,13 +79,11 @@ public class Main implements Serializable {
      * reasons. Upon successful authentication/ verification obtains the records
      * of the party requesting access.
      * TODO: Add something so that a user can go back to the main menu - yes/ no?
-     * TODO: Add client authenticating server?
      * @throws Exception
      */
     private void login() throws Exception {
-        denied = false;
         System.out.println("\nLOGIN SYSTEM\n\nEnter username: ");
-        tempName = userInput();
+        tempUsername = userInput();
         System.out.println("Enter password:");
         tempPass = userInput();
 
@@ -92,7 +92,7 @@ public class Main implements Serializable {
             System.out.println("Burn your hard drive and run away cos it is not the MedicalService");
             System.exit(0);
         }
-        msg = new Message(tempName, tempPass, this);
+        msg = new Message(tempUsername, tempPass, this);
         //TODO: encrypt the message (another keypair will be needed bleh)
         /*to be fair for simplicity we will use the same key pair, but need to
         *include in the report that in the production normally there would be a different key pair
@@ -100,7 +100,7 @@ public class Main implements Serializable {
         SafeMessage encryptedMsg = prepMessage(msg);
         SafeMessage sealedResponse = server.authenticateUser(encryptedMsg);
 
-        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempName);
+        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempUsername);
         SecretKey decryptedKey = CryptUtil.decrypt(sealedResponse.getSecretKeyEncrypted(), userPrivKey);
 
         response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
@@ -114,10 +114,10 @@ public class Main implements Serializable {
             }
 
             checkLocked(status);       // check if the account has been locked
-            // Finally if everything went gucci obtain the user object for the requested user
+            // Finally if everything went gucci obtain the context for that user
+            //TODO: Add context class to represent a context for a user
             if (status == CODE_CORRECT) {
-                this.currentUser = response.getUser();
-                System.out.println("Welcome " + currentUser.getUsername() + "!");
+                System.out.println("Welcome " + tempUsername + "!");
             }
         } else if (response.getStatus() == CREDENTIALS_BAD) {
             System.out.println("\n\n<Login error - incorrect credentials.>");
@@ -136,41 +136,31 @@ public class Main implements Serializable {
         }
     }
 
+    // TODO: fuck that we don't have time
     // TODO: might want to redesign so that users do not choose the username themselves but are rather assigned some IDs
     private void register() throws Exception
     {
-        denied = false;
-        System.out.println("\nREGISTRATION SYSTEM\n\nEnter username:");
+        System.out.println("\nREGISTRATION SYSTEM\n\nEnter your first name:");
         // Username input
         tempName = userInput();
+        System.out.println("\n\nEnter your last name:");
+        tempSurname = userInput();
+        System.out.println("\n\nEnter your email:");
+        tempMail = userInput();
+        String pass = takeNewPass();
+        System.out.println("\n\nEnter a username you would like to use:");
+        tempUsername = userInput();
+        String code = setUpAuthentication();
+
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
-        Message msg = new Message(tempName, null);
-        response = server.validateUsername(msg);
-        if (response.isValid()) { takeNewPass(); }
-        else {
-            denied = true;
-            takeNewPass();
+        Message msg = new Message(tempName, tempSurname, tempUsername, pass, tempMail, code);
+        int status = server.addPatient(msg);
+        if (status == REGISTRATION_SUCCESS) {
+            System.out.println("\n\nWOHOO REGISTRATION SUCCESSFUL!");
+            mainScreen();
         }
-    }
-
-    public void takeNewPass() throws Exception {    //registration password
-        // Password input
-        System.out.println("Enter password: ");
-        firstPass = userInput();
-        System.out.println("Confirm password: ");
-        tempPass = userInput();
-
-        if(!firstPass.equals(tempPass)) {
-            System.out.println("\nPasswords do not match\n");
-            takeNewPass();
-        }
-
-        msg = new Message(null, tempPass);
-        response = server.validatePassword(msg);
-        if (response.isValid() && !denied)
-            setUpAuthentication();
         else {
-            System.out.println("\nInvalid username/password");
+            System.out.println("\nAn account with those credentials may already exist or your password is too weak.");
             System.out.println("Please ensure your password includes all requirements: ");
             System.out.println("At least 1 lowercase character");
             System.out.println("At least 1 uppercase character");
@@ -179,6 +169,23 @@ public class Main implements Serializable {
             System.out.println("At least 10 characters");
             register();
         }
+    }
+
+    public String takeNewPass() throws Exception {    //registration password
+        // Password input
+        System.out.println("Enter password: ");
+        firstPass = userInput();
+        System.out.println("Confirm password: ");
+        tempPass = userInput();
+
+        while(!firstPass.equals(tempPass)) {
+            System.out.println("\nPasswords do not match\n");
+            System.out.println("Enter password: ");
+            firstPass = userInput();
+            System.out.println("Confirm password: ");
+            tempPass = userInput();
+        }
+        return tempPass;
     }
 
     private SafeMessage prepMessage(Message msg) throws Exception {
@@ -195,46 +202,41 @@ public class Main implements Serializable {
         System.out.println("--> Type 'none' if you don't have one");        // dummy value tbf as it is not checked
 //        System.out.println("Type 'cancel' to go back to the main menu.");
         String code = userInput();
-        msg = new Message(tempName, code);
+        msg = new Message(tempUsername, code);
         SafeMessage safeMessage = prepMessage(msg);
 
         SafeMessage encryptedResponse = server.verifyCode(safeMessage);
-        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempName);
+        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempUsername);
         SecretKey decryptedKey = CryptUtil.decrypt(encryptedResponse.getSecretKeyEncrypted(), userPrivKey);
 
         Message response = CryptUtil.decrypt(encryptedResponse.getObj(), decryptedKey);
         return response;
     }
 
-    private void setUpAuthentication() throws Exception {   //registration auth
-        System.out.println("\nRegistration successful. Would you like to set up Two Factor Authentication? (yes/no)");
-        String key = null;
+    private String setUpAuthentication() throws Exception {   //registration auth
+        System.out.println("\nWould you like to set up Two Factor Authentication? (yes/no)");
+        String key = "none";
         while(true) {
             String cmd = userInput();
             if(cmd.equals("yes")) {
                 key = server.secretKeyGen();
-                msg = new Message(tempName, tempPass, key);
-                server.createQRimage(msg);
-                
                 System.out.println("\nPlease scan the picture displayed.");
                 Runtime.getRuntime().exec("cmd.exe /c start " + "./" + msg.getUsername() + "_QRcode.png");
                 System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);
                 break;
             } else if(cmd.equals("no")) {
                 System.out.println("Understandable, have a nice day.");     // lol Trump would appreciate
-                msg = new Message(tempName, tempPass, key);
                 break;
             }
 //            System.out.println("Please enter 'yes' or 'no'");
         }
         // Runtime.getRuntime().exec("cmd /c start del /S *.png");  //will delete all .png files in current dir (will implement later on)
-        server.addUser(msg);
-        mainScreen();
+        return key;
     }
 
     public String signChallenge(String challenge) throws Exception {
 //        System.out.println(tempName);
-        PrivateKey privKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempName);
+        PrivateKey privKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempUsername);
         String signed = SignUtil.signChallenge(challenge, privKey);
         return signed;
     }

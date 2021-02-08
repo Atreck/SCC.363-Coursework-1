@@ -12,12 +12,13 @@ public class Message implements Serializable {
 
     private String username;
     private String password;
+    private String name;
+    private String surname;
+    private String email;
     private String code;
     private boolean valid;
-    private User user;
     private Main client;
     private int status;
-    private int tries;
 
     /**
      * Constructs a client request containing a client's (prospect)
@@ -43,33 +44,24 @@ public class Message implements Serializable {
         this.code = code;
     }
 
+    public Message(String name, String surname, String username, String password, String email,String code) {
+        this.name = name;
+        this.surname = surname;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.code = code;
+    }
+
     public Message(boolean valid) { this.valid = valid; }
 
-    public Message(User user) { this.user = user; }
-
     public Message(int status) { this.status = status; }
-
-    public Message(int status, int tries) {
-        this.status = status;
-        this.tries = tries;
-    }
-
-    public Message(int status, User user) {
-        this.status = status;
-        this.user = user;
-    }
 
     /**
      * Obtains a username connected with this request.
      * @return username provided with this request
      */
     public String getUsername() {return username; }
-
-    /**
-     * Obtains a User instance supplied with this message.
-     * @return User object
-     */
-    public User getUser() { return user; }
 
     /**
      * obtains a password supplied with this request
@@ -95,11 +87,19 @@ public class Message implements Serializable {
         return status;
     }
 
-    public int getTries() {
-        return tries;
-    }
-
     public String getCode() {
         return code;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getSurname() {
+        return surname;
+    }
+
+    public String getEmail() {
+        return email;
     }
 }

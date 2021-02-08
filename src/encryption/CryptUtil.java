@@ -4,6 +4,7 @@ import main.Message;
 import org.apache.commons.codec.digest.Crypt;
 
 import javax.crypto.*;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -99,9 +101,9 @@ public class CryptUtil {
             throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
         // -------------------- FOR VS CODE ---------------------------------
-        String path = String.format("Keys/%s/PrivateKey", username);
+//        String path = String.format("Keys/%s/PrivateKey", username);
         // -------------------- FOR INTELLIJ --------------------------------
-//        String path = String.format("src/Keys/%s/PrivateKey", username);
+        String path = String.format("src/Keys/%s/PrivateKey", username);
         FileInputStream fis = new FileInputStream(path);
         byte[] privateKey = fis.readAllBytes();
 
@@ -125,9 +127,9 @@ public class CryptUtil {
             InvalidKeySpecException, IOException {
 
         // -------------------- FOR VS CODE ---------------------------------
-        String path = String.format("Keys/%s/PublicKey", username);
+//        String path = String.format("Keys/%s/PublicKey", username);
         // -------------------- FOR INTELLIJ --------------------------------
-//        String path = String.format("src/Keys/%s/PublicKey", username);
+        String path = String.format("src/Keys/%s/PublicKey", username);
 
         FileInputStream fis = new FileInputStream(path);
         byte[] pubKey = fis.readAllBytes();
@@ -236,6 +238,36 @@ public class CryptUtil {
         byte[] decrypted = cipher.doFinal(secretEncrypted);
         SecretKey secretKey = new SecretKeySpec(decrypted, "AES");
         return secretKey;
+    }
+
+
+
+    public static String saltPass(String pass, String salt) throws Exception {
+        // https://www.baeldung.com/java-password-hashing
+
+        byte[] byteSalt = salt.getBytes();
+
+        KeySpec spec = new PBEKeySpec(pass.toCharArray(), byteSalt, 65536, 128);
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+
+        byte[] hashed = factory.generateSecret(spec).getEncoded();
+
+        StringBuilder stringBuilder = new StringBuilder();
+        for (byte b : hashed)
+            stringBuilder.append(String.format("%02x", b));
+
+        String encodedPassword = stringBuilder.toString();
+
+        return encodedPassword;
+    }
+
+
+    public static byte[] genSalt() {
+        SecureRandom random = new SecureRandom();
+        byte[] salt = new byte[16];
+        random.nextBytes(salt);
+
+        return salt;
     }
 
 

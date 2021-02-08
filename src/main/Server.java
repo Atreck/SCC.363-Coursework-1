@@ -27,17 +27,19 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     private static HashMap<String, User> database = new HashMap<>();
     private String tempUsername;
     public static final int CHALLENGE_LEN = 50;
-    private final int PASS_OK = 1;
+    private static final int PASS_OK = 1;
     private final int CREDENTIALS_OK = 2;
     private final int CREDENTIALS_BAD = 3;
     private final int CODE_INCORRECT = 4;
     private final int CODE_CORRECT = 5;
     private final int LOCKED = 8;
+    private final int REGISTRATION_SUCCESS = 9;
+    private final int REGISTRATION_FAIL = 10;
 
     public Server() throws Exception {
         super();
-        addUser(new Message("admin", "password", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A"));
-        addUser(new Message("testUser", "MyPassword#3456", "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
+//        addUser(new Message("admin", "password", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A"));
+//        addUser(new Message("testUser", "MyPassword#3456", "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
     public SafeMessage authenticateUser(SafeMessage safeMessage) throws Exception {
@@ -56,7 +58,9 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             return prepResponse(msg, username);
         }
 
-        boolean username_valid = this.validateUsername(username);
+        System.out.println("** Validating username for : " + username);
+        boolean username_valid = RecordsUtil.userExists(username);
+        System.out.println("** Username valid: " + username_valid);
         int pass_valid = this.verifyPassword(username, pass);
         if (username_valid && pass_valid == PASS_OK) {
             Message msg = new Message(CREDENTIALS_OK);
@@ -102,23 +106,20 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     }
 
     public int verifyPassword(String username, String pass) throws  Exception {
-        User user = database.get(username);
         System.out.println("** Verifying password for user: " + username);
+        int status = RecordsUtil.passMatches(username, pass);
 
-        if (!pass.equals(user.getPassword()) && user.getTries() > 0) {
-            user.setTries(user.getTries()-1);
-
-            if(user.getTries() == 0) {
-                //Add implementation in Server.java to lock out user using the lockUser() method.
-                System.out.println("** Password incorrect - account locked for user: " + username);
-                lockUser(username);
-                return LOCKED;
-            }
+        if(status == LOCKED) {
+            //Add implementation in Server.java to lock out user using the lockUser() method.
+            System.out.println("** Password incorrect - account locked for user: " + username);
+            lockUser(username);
+            return LOCKED;
+        }
+        else if (status == CREDENTIALS_BAD) {
             System.out.println("** Password incorrect for user: " + username);
             return CREDENTIALS_BAD;
         }
-        // reset the tries
-        user.setTries(3);
+        // else pass is ok
         System.out.println("** Password correct for user: " + username);
         return PASS_OK;
     }
@@ -130,66 +131,59 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String username = message.getUsername();
         String code = message.getPassword();  // password field can be used to carry code as well
 
-        User user = database.get(username);
+
         System.out.println("** Verifying code for user: " + username);
+        int status = RecordsUtil.codeMatches(username, code);
 
-        if(user.getSecretCode() != null) {
-            if(!code.equals(TOTPcode(user.getSecretCode())) && user.getTries() > 0) {
-                user.setTries(user.getTries()-1);
-
-                if(user.getTries() == 0) {
-                    //Add implementation in Server.java to lock out user using the lockUser() method
-                    lockUser(username);
-                    System.out.println("** Incorrect code - account has been locked for user: " + username);
-                    Message msg = new Message(LOCKED);
-                    return prepResponse(msg, username);
-                }
-                System.out.println("** Incorrect code for user: " + username);
-                Message msg = new Message(CODE_INCORRECT, user.getTries());
-                return prepResponse(msg, username);
-            }
+        if (status == LOCKED) {
+            //Add implementation in Server.java to lock out user using the lockUser() method
+            lockUser(username);
+            System.out.println("** Incorrect code - account has been locked for user: " + username);
+            Message msg = new Message(LOCKED);
+            return prepResponse(msg, username);
         }
-        // reset the tries
-        user.setTries(3);
+        else if (status == CODE_INCORRECT) {
+            System.out.println("** Incorrect code for user: " + username);
+            Message msg = new Message(CODE_INCORRECT);
+            return prepResponse(msg, username);
+        }
         System.out.println("** Verification code correct for user: " + username);
-        Message msg = new Message(CODE_CORRECT, user);
+        Message msg = new Message(CODE_CORRECT);
         return prepResponse(msg, username);
     }
 
-    public void addUser(Message message) throws Exception {
+    public int addPatient(Message message) throws Exception {
         String username = message.getUsername();
         String password = message.getPassword();
-        String key = message.getCode();
+        String name = message.getName();
+        String email = message.getEmail();
+        String surname = message.getSurname();
+        String code = message.getCode();
 
-        database.put(username, new User(username, password, key));
-        register(username, password);
+        if (code != null) {
+            createQRimage(username, code);
+        }
+
+        boolean passStrong = strengthCheck(password);
+        if (!passStrong) { return REGISTRATION_FAIL;}
+
+        boolean userExists = RecordsUtil.userExists(username);
+        if (!userExists) {
+            RecordsUtil.addPatient(username, name, surname, email, password, code);
+            register(username);
+            return REGISTRATION_SUCCESS;
+        }
+        return REGISTRATION_FAIL;
     }
 
-    public boolean validateUsername(String username) throws Exception {
-        tempUsername = username;
+    public boolean validateUsername(String userID) throws Exception {
+        tempUsername = userID;
+        // check in the json
+
         boolean valid = database.containsKey(tempUsername);
         System.out.println("** Validating username for : " + tempUsername);
         System.out.println("** Username valid: " + valid);
         return valid;
-    }
-
-    public Message validateUsername(Message msg) throws Exception {
-        tempUsername = msg.getUsername();
-        boolean valid = !database.containsKey(tempUsername);
-        System.out.println("Validating username for " + tempUsername + ": " + valid);
-        return new Message(valid);
-    }
-
-    public Message validatePassword(Message message) throws Exception {
-        String password = message.getPassword();
-        boolean valid = strengthCheck(password);
-        if (valid) {
-            // ready to be stored
-            String saltedPass = saltPass(password);
-        }
-        else { System.out.println("Registration failed with username:" + tempUsername +
-                "and password: " + password);}
-        return new Message(valid);
     }
 
     public String secretKeyGen() throws Exception {
@@ -198,16 +192,10 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     	return new Base32().encodeToString(bytes);
 	}
 
-	public String TOTPcode(String secretKey) throws Exception {
-    	byte[] bytes = new Base32().decode(secretKey);
-		String hexKey = Hex.encodeHexString(bytes);
-		return TOTP.getOTP(hexKey);
-    }
-
-    public void createQRimage(Message m) throws Exception {
-        String content = "otpauth://totp/MedicalPortal: " + m.getUsername() + "?secret=" + m.getCode() + "&algorithm=SHA1&digits=6&period=30";
+    public void createQRimage(String username, String code) throws Exception {
+        String content = "otpauth://totp/MedicalPortal: " + username + "?secret=" + code + "&algorithm=SHA1&digits=6&period=30";
         BitMatrix matrix = new QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, 200, 200);
-        Path path = FileSystems.getDefault().getPath("./" + m.getUsername() + "_QRcode.png");
+        Path path = FileSystems.getDefault().getPath("./" + username + "_QRcode.png");
         MatrixToImageWriter.writeToPath(matrix, "PNG", path);
     }
 
