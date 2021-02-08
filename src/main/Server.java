@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.rmi.Naming;
 import java.security.*;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 
 import com.google.zxing.qrcode.QRCodeWriter;
@@ -24,7 +25,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
     //TODO: Add docs and comments.
 
-    private static HashMap<String, User> database = new HashMap<>();
+    private static HashMap<String, HashSet<String>> activeUsers = new HashMap<>();
     private String tempUsername;
     public static final int CHALLENGE_LEN = 50;
     private static final int PASS_OK = 1;
@@ -174,16 +175,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             return REGISTRATION_SUCCESS;
         }
         return REGISTRATION_FAIL;
-    }
-
-    public boolean validateUsername(String userID) throws Exception {
-        tempUsername = userID;
-        // check in the json
-
-        boolean valid = database.containsKey(tempUsername);
-        System.out.println("** Validating username for : " + tempUsername);
-        System.out.println("** Username valid: " + valid);
-        return valid;
     }
 
     public String secretKeyGen() throws Exception {

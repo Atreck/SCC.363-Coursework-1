@@ -24,8 +24,6 @@ public interface MedicalService extends Remote {
 
     int addPatient(Message message) throws Exception;
 
-    boolean validateUsername(String username) throws Exception;
-
     boolean challengeUser(Main client, String username) throws Exception;
 
     String signChallenge(String challenge) throws Exception;

@@ -97,11 +97,17 @@ public class RecordsUtil {
         JSONObject jo = (JSONObject) obj;
 
         String correctCode = (String) jo.get("authKey");
+        String code = "";
+        if (correctCode.equals("none")) {
+            code = correctCode;
+        } else {
+            code = TOTPcode(correctCode);
+        }
 
         // needs to use longs not sure why (maybe ints are not serializable or smth?)
         long tries = (long) jo.get("tries");
 
-        if (providedCode.equals(TOTPcode(correctCode))) {
+        if (providedCode.equals(code)) {
             jo.put("tries", TRIES);     // reset tries
             PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
             pw.write(jo.toJSONString());
