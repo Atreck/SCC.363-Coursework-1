@@ -16,6 +16,7 @@ public class Message implements Serializable {
     private String surname;
     private String email;
     private String code;
+    private String records;
     private String group;
     private boolean valid;
     private Main client;

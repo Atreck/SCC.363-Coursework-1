@@ -29,7 +29,10 @@ public class Main implements Serializable {
 
     private final String REGISTER = "register";
     private final String LOGIN = "login";
+    private final String LOGOUT = "logout";
     private final String EXIT = "exit";
+    private final String MY_RECORDS = "my_records";
+    private final String UPDATE_INFO = "update_info";
 
     private final int CREDENTIALS_OK = 2;
     private final int CREDENTIALS_BAD = 3;
@@ -39,12 +42,64 @@ public class Main implements Serializable {
     private final int REGISTRATION_SUCCESS = 9;
     private final int REGISTRATION_FAIL = 10;
 
+    private final int OK = 200;
+    private final int FORBIDDEN = 403;
+    //    private final int NOT_ALLOWED = 405;
+    private final int ERROR = 400;
+
     //TODO: Add docs and comments.
 
     public Main() throws Exception {
         mainScreen();
     }
 
+    public void see_records(String issuer, String usertosee) throws Exception {
+        Message msg = new Message(issuer, usertosee);
+        SafeMessage safeMessage = prepMessage(msg);
+        SafeMessage sealedResponse = server.getRecords(safeMessage);
+
+        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempUsername);
+        SecretKey decryptedKey = CryptUtil.decrypt(sealedResponse.getSecretKeyEncrypted(), userPrivKey);
+
+        response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
+        if (response.getStatus() == FORBIDDEN) {
+            System.out.println("Sorry you might not have permissions to perform this action.");
+        } else if (response.getStatus() == OK) {
+            // group field may be used to carry records as well as it is all strings
+            System.out.println("Your medical history:\n" + response.getGroup());
+        }
+    }
+
+    public void update_records(String issuer, String usertoupdate) throws Exception {
+        Message msg = new Message(issuer, usertoupdate);
+        SafeMessage safeMessage = prepMessage(msg);
+        SafeMessage sealedResponse = server.updateRecords(safeMessage);
+
+        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempUsername);
+        SecretKey decryptedKey = CryptUtil.decrypt(sealedResponse.getSecretKeyEncrypted(), userPrivKey);
+
+        response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
+        if (response.getStatus() == FORBIDDEN) {
+            System.out.println("Sorry you might not have permissions to perform this action.");
+        } else if (response.getStatus() == OK) {
+            // group field may be used to carry records as well as it is all strings
+            System.out.println("Records updated successfully for user: " + usertoupdate);
+        }
+    }
+
+    public void menuScreenPatient(String username) throws Exception {
+        System.out.print("\n\nWELCOME BACK " + username);
+        System.out.println("1. Type 'my_records' to see your medical history.");
+        System.out.println("2. Type 'update_info' to update your contact information.");
+        System.out.println("3. Type 'logout' to end the session.");
+
+        switch(s.nextLine()) {
+            case MY_RECORDS: see_records(tempUsername, tempUsername); break;
+            case LOGOUT: logout(); break;
+            case UPDATE_INFO: update_records(tempUsername, tempUsername); break;
+            default: menuScreenPatient(tempUsername); break;
+        }
+    }
 
     public void mainScreen() throws Exception {
         System.out.println("\nWelcome to the Medical Portal!");
@@ -59,6 +114,15 @@ public class Main implements Serializable {
             case EXIT: exit(); break;
             default: mainScreen(); break;
         }
+    }
+
+    private void logout() throws Exception {
+        msg = new Message(tempUsername, null);
+        SafeMessage safeMessage = prepMessage(msg);
+
+        server.logout(safeMessage);
+        tempUsername = null;
+        mainScreen();
     }
 
     private void exit() {

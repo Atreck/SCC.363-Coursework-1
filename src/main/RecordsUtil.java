@@ -38,6 +38,47 @@ public class RecordsUtil {
     private static final int CAN_READ_LOGS = 12;
 
 
+    public static boolean hasReadPatientsPermission(String username) throws IOException, ParseException {
+        Context context = getContext(username);
+        if (context.getPermissions().contains(CAN_READ_PATIENTS)) return true;
+        return false;
+    }
+
+    public static String readPatient(String username) throws IOException, ParseException {
+        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        JSONObject jo1 = (JSONObject) obj1;
+        // check to which group the user belongs to
+        String group = (String) jo1.get(username);
+
+        // based on the group go into the correct user dir and file
+        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+
+        // typecasting obj to JSONObject
+        JSONObject jo = (JSONObject) obj;
+
+        String records = (String) jo.get("records");
+        return records;
+    }
+
+    public static boolean isActive(String username) throws IOException, ParseException {
+        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        JSONObject jo1 = (JSONObject) obj1;
+        // check to which group the user belongs to
+        String group = (String) jo1.get(username);
+
+        // based on the group go into the correct user dir and file
+        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+
+        // typecasting obj to JSONObject
+        JSONObject jo = (JSONObject) obj;
+
+        // read the value of active: 0 - inactive, 1 - active)
+        long active = (long) jo.get("active");
+        if (active == 0) return false;
+        else if (active == 1) return true;
+        else return false;
+    }
+
     public static Context getContext(String username) throws IOException, ParseException {
         Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
         JSONObject jo1 = (JSONObject) obj1;
@@ -46,6 +87,15 @@ public class RecordsUtil {
         // now check permissions associated with that group
         Object obj = new JSONParser().parse(new FileReader("src/Users/permissions.json"));
         JSONObject jo = (JSONObject) obj;
+
+        // get the active and locked flags
+        Object obj2 = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+
+        // typecasting obj to JSONObject
+        JSONObject jo2 = (JSONObject) obj;
+
+        long active = (long) jo.get("active");
+        long locked = (long) jo.get("locked");
 
         HashSet<Long> permissions = new HashSet<>();
 
@@ -60,7 +110,44 @@ public class RecordsUtil {
             permissions.add(permission);
         }
 
-        return new Context(group, permissions);
+        return new Context(group, active, locked, permissions);
+    }
+
+    public static void login(String username) throws IOException, ParseException {
+        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        JSONObject jo1 = (JSONObject) obj1;
+        String group = (String) jo1.get(username);
+        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+
+        // typecasting obj to JSONObject
+        JSONObject jo = (JSONObject) obj;
+
+        // active indicates whether a user has been authenticated, etc and logged in successfully or exited the sytem
+        // 0 - inactive
+        // 1 - active
+        jo.put("active", 1);
+        PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
+        pw.write(jo.toJSONString());
+
+        pw.flush();
+        pw.close();
+    }
+
+    public static void logout(String username) throws IOException, ParseException {
+        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        JSONObject jo1 = (JSONObject) obj1;
+        String group = (String) jo1.get(username);
+        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+
+        // typecasting obj to JSONObject
+        JSONObject jo = (JSONObject) obj;
+
+        jo.put("active", 0);
+        PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
+        pw.write(jo.toJSONString());
+
+        pw.flush();
+        pw.close();
     }
 
     public static boolean userExists(String username) throws IOException, ParseException {
@@ -93,7 +180,7 @@ public class RecordsUtil {
 
         if (thisHash.equals(correctHash)) {
             jo.put("tries", TRIES);     // reset tries
-            PrintWriter pw = new PrintWriter(String.format("src/Users/Patients/%s.json", username));
+            PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
             pw.write(jo.toJSONString());
 
             pw.flush();
@@ -103,7 +190,7 @@ public class RecordsUtil {
         else {
             tries -= 1;
             jo.put("tries", tries);
-            PrintWriter pw = new PrintWriter(String.format("src/Users/Patients/%s.json", username));
+            PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
             pw.write(jo.toJSONString());
 
             pw.flush();
@@ -174,13 +261,14 @@ public class RecordsUtil {
         jo.put("name", name);
         jo.put("surname", surname);
         jo.put("email", email);
-        jo.put("summary", "");
-        jo.put("records", "");
-        jo.put("prescriptions", "");
+        jo.put("summary", "None");
+        jo.put("records", "None");
+        jo.put("prescriptions", "None");
         jo.put("passHash", saltedPass);
         jo.put("salt", salt);
         jo.put("authKey", code);
         jo.put("tries", 3);
+        jo.put("active", 0);
 
         PrintWriter pw = new PrintWriter(String.format("src/Users/Patients/%s.json", username));
         pw.write(jo.toJSONString());
@@ -216,6 +304,7 @@ public class RecordsUtil {
         jo.put("salt", salt);
         jo.put("authKey", code);
         jo.put("tries", 3);
+        jo.put("active", 0);
 
         PrintWriter pw = new PrintWriter(String.format("src/Users/Admins/%s.json", username));
         pw.write(jo.toJSONString());
@@ -268,16 +357,16 @@ public class RecordsUtil {
         //----------------------------------------------------------------------------------//
         //--------------------------- Read from JSON ---------------------------------------//
         // parsing file "JSONExample.json"
-        Object obj = new JSONParser().parse(new FileReader("src/Users/Patients/JohnDoe.json"));
-
-        // typecasting obj to JSONObject
-        JSONObject jo = (JSONObject) obj;
-
-        // getting firstName and lastName
-        String firstName = (String) jo.get("firstName");
-        String lastName = (String) jo.get("lastName");
-
-        System.out.println(firstName);
+//        Object obj = new JSONParser().parse(new FileReader("src/Users/Patients/JohnDoe.json"));
+//
+//        // typecasting obj to JSONObject
+//        JSONObject jo = (JSONObject) obj;
+//
+//        // getting firstName and lastName
+//        String firstName = (String) jo.get("firstName");
+//        String lastName = (String) jo.get("lastName");
+//
+//        System.out.println(firstName);
 
 //        jo.put("firstName", "Jessica");
 //        PrintWriter pw = new PrintWriter("src/Users/Patients/JohnDoe.json");

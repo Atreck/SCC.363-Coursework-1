@@ -1,9 +1,11 @@
 package main;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.rmi.Naming;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
@@ -12,14 +14,14 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import encryption.CryptUtil;
 import org.apache.commons.codec.binary.*;
 import de.taimos.totp.*;
+import org.json.simple.parser.ParseException;
 import signatures.SignUtil;
 
 import com.google.zxing.*;
 import com.google.zxing.common.*;
 import com.google.zxing.client.j2se.*;
 
-import javax.crypto.SealedObject;
-import javax.crypto.SecretKey;
+import javax.crypto.*;
 import java.nio.file.*;
 public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService {
 
@@ -30,8 +32,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     ** (by storing timestamps for example?) when the last time they performed any kind of action was - if
     ** current timestamp - last_accessed >= timeout ----> log out a user
      */
-    private static HashMap<String, HashSet<Long>> activeUsers = new HashMap<>();
-    private String tempUsername;
+//    private static HashMap<String, HashSet<Long>> activeUsers = new HashMap<>();
     public static final int CHALLENGE_LEN = 50;
     private static final int PASS_OK = 1;
     private final int CREDENTIALS_OK = 2;
@@ -42,10 +43,15 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     private final int REGISTRATION_SUCCESS = 9;
     private final int REGISTRATION_FAIL = 10;
 
+    private final int OK = 200;
+    private final int FORBIDDEN = 403;
+//    private final int NOT_ALLOWED = 405;
+    private final int ERROR = 400;
+
     public Server() throws Exception {
         super();
-        addAdmin("admin", "Joe", "Admindoe", "superUser89@pass", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
-        addPatient(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
+//        addAdmin("admin", "Joe", "Admindoe", "superUser89@pass", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
+//        addPatient(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
     public SafeMessage authenticateUser(SafeMessage safeMessage) throws Exception {
@@ -159,7 +165,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         }
         System.out.println("** Verification code correct for user: " + username);
         Context context = RecordsUtil.getContext(username);
-        activeUsers.put(username, context.getPermissions());
+//        activeUsers.put(username, context.getPermissions());
         Message msg = new Message(CODE_CORRECT, context.getGroup());
         return prepResponse(msg, username);
     }
@@ -225,9 +231,85 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         MatrixToImageWriter.writeToPath(matrix, "PNG", path);
     }
 
+    public void logout(SafeMessage safeMessage) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, ClassNotFoundException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException {
+        PrivateKey serverPrivateKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server");
+        SecretKey secretKey = CryptUtil.decrypt(safeMessage.getSecretKeyEncrypted(), serverPrivateKey);
+        Message data = CryptUtil.decrypt(safeMessage.getObj(), secretKey);
+        String username = data.getUsername();
+
+    }
+
+    public SafeMessage getRecords(SafeMessage safeMessage) throws
+            Exception {
+
+        PrivateKey serverPrivateKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server");
+        SecretKey secretKey = CryptUtil.decrypt(safeMessage.getSecretKeyEncrypted(), serverPrivateKey);
+        Message data = CryptUtil.decrypt(safeMessage.getObj(), secretKey);
+        // Extract data from the message
+        String issuer = data.getUsername();
+        String usertosee = data.getPassword();        // password field can be used to carry this this info
+
+
+        String records = "";
+        Message message = new Message(FORBIDDEN, records);
+        boolean status = false;
+        // we check if it is a Patient just accessing their own data or is it someone else
+        String group = RecordsUtil.getContext(issuer).getGroup();
+        if (!issuer.equals(usertosee)) {
+            status = RecordsUtil.hasReadPatientsPermission(issuer);
+            if (status) {
+                records = RecordsUtil.readPatient(usertosee);
+                message = new Message(OK, records);
+            }
+        } else if (group.equals("Patients")) {         // issuer is the same as the user to see and belongs to Patients
+            records = RecordsUtil.readPatient(usertosee);
+            message = new Message(OK, records);
+        }
+
+        return prepResponse(message, issuer);
+    }
+
+    public SafeMessage updateRecords(SafeMessage safeMessage)
+            throws Exception {
+
+        PrivateKey serverPrivateKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server");
+        SecretKey secretKey = CryptUtil.decrypt(safeMessage.getSecretKeyEncrypted(), serverPrivateKey);
+        Message data = CryptUtil.decrypt(safeMessage.getObj(), secretKey);
+        // Extract data from the message
+        String issuer = data.getUsername();
+        String usertosee = data.getPassword();        // password field can be used to carry this this info
+
+        /* I will not include the actual update information, so it is kind of just a simulation
+           instead I will just send a response (OK - updated, FORBIDDEN - not updated, lack of permissions)
+         */
+        Message message = new Message(FORBIDDEN);
+        boolean status = false;
+        // we check if it is a Patient just accessing their own data or is it someone else
+        String group = RecordsUtil.getContext(issuer).getGroup();
+        if (!issuer.equals(usertosee)) {
+            System.out.println("Update user");
+//            status = RecordsUtil.hasUpdatePatientsPermission(issuer);
+            if (status) {
+                // here we update records and send back an OK message
+                message = new Message(OK);
+            }
+        } else if (group.equals("Patients")) {         // issuer is the same as the user to see and belongs to Patients
+            // here we update records and send back an OK message
+            message = new Message(OK);
+        }
+
+        return prepResponse(message, issuer);
+    }
+
+
+    // TODO: I added a "locked" field in users files so can be just updated there and users denied access based on its value
+    // 0 - not locked, 1 - locked
     public void lockUser(String user) throws Exception {
         // Okay this is just so beautiful, can we leave it like that please hahahah ~ Kas
         System.out.println("SKIDADDLE SKIDOODLE THE USER " + user + " IS NOW A NOODLE");
+        // Needs implementation
+//        RecordsUtil.blockUser(user);
     }
     public static void main(String[] args) throws Exception {
         try {

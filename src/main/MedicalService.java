@@ -18,6 +18,12 @@ public interface MedicalService extends Remote {
 
     SafeMessage authenticateUser(SafeMessage obj) throws Exception;
 
+    void logout(SafeMessage obj) throws Exception;
+
+    SafeMessage getRecords(SafeMessage obj) throws Exception;
+
+    SafeMessage updateRecords(SafeMessage obj) throws Exception;
+
     int verifyPassword(String username, String password) throws Exception;
 
     SafeMessage verifyCode(SafeMessage obj) throws Exception;
