@@ -92,10 +92,10 @@ public class RecordsUtil {
         Object obj2 = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
 
         // typecasting obj to JSONObject
-        JSONObject jo2 = (JSONObject) obj;
+        JSONObject jo2 = (JSONObject) obj2;
 
-        long active = (long) jo.get("active");
-        long locked = (long) jo.get("locked");
+        long active = (long) jo2.get("active");
+        long locked = (long) jo2.get("locked");
 
         HashSet<Long> permissions = new HashSet<>();
 

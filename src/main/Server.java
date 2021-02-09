@@ -75,10 +75,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         System.out.println("** Username valid: " + username_valid);
         int pass_valid = this.verifyPassword(username, pass);
         if (username_valid && pass_valid == PASS_OK) {
-            // add to active users cache
-            // now can just look up if a user is in active users (so is logged in)
-            // and on subsequent calls to do an action (read records) etc we can just check whether the set
-            // the permissions which allow them to perform certain actions
             Message msg = new Message(CREDENTIALS_OK);
             return prepResponse(msg, username);
         } else if (pass_valid == LOCKED) {
@@ -166,7 +162,9 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         System.out.println("** Verification code correct for user: " + username);
         Context context = RecordsUtil.getContext(username);
 //        activeUsers.put(username, context.getPermissions());
+        System.out.println();
         Message msg = new Message(CODE_CORRECT, context.getGroup());
+
         return prepResponse(msg, username);
     }
 
