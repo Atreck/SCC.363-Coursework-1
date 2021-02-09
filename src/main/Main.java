@@ -37,8 +37,19 @@ public class Main implements Serializable {
     private final String LOGIN = "login";
     private final String LOGOUT = "logout";
     private final String EXIT = "exit";
+
+    // Patient-specific actions
     private final String MY_RECORDS = "my_records";
     private final String UPDATE_INFO = "update_info";
+
+    //Admin-specific actions
+    // some regexes
+    private final String ALL_USERS = "all_users";
+    private final String GET_PERMS = "get_perms\\s\\w+";
+    private final String SET_PERMS = "set_perms\\s\\w+";
+    private final String ASSIGN_TO_GROUP = "assign\\s\\w+";
+    private final String ADD_USER = "add_user";
+    private final String DEL_USER = "del_user\\s\\w+";
 
     private final int CREDENTIALS_OK = 2;
     private final int CREDENTIALS_BAD = 3;
@@ -50,6 +61,8 @@ public class Main implements Serializable {
 
     private final int OK = 200;
     private final int FORBIDDEN = 403;
+    private final int INACTIVE_TIMEOUT = 408;
+    private final int AUTH_REQUIRED = 511;
     //    private final int NOT_ALLOWED = 405;
     private final int ERROR = 400;
 
@@ -73,6 +86,12 @@ public class Main implements Serializable {
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("Your medical history:\n" + response.getGroup());
+        } else if (response.getStatus() == INACTIVE_TIMEOUT) {
+            System.out.println("Automatic logout after an inactive period:\n");
+            exit();
+        } else if (response.getStatus() == AUTH_REQUIRED) {
+            System.out.println("You are not logged in!");
+            exit();
         }
     }
 
@@ -90,20 +109,56 @@ public class Main implements Serializable {
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("Records updated successfully for user: " + usertoupdate);
+        } else if (response.getStatus() == INACTIVE_TIMEOUT) {
+            System.out.println("Automatic logout after an inactive period:\n");
+            exit();
+        } else if (response.getStatus() == AUTH_REQUIRED) {
+            System.out.println("You are not logged in!");
+            exit();
         }
     }
 
+    public void menuScreenAdmin(String username) throws Exception {
+        System.out.println("\n1. Type 'all_users' to get user's usernames and their corresponding groups.");
+        System.out.println("2. Type 'get_perms <group>' to see permissions associated with a specific group.");
+        System.out.println("3. Type 'set_perms <groups>' to assign new permissions to a specific group.");
+        System.out.println("4. Type 'assign <username> <group>' to assign a user to a specific group.");
+        System.out.println("5. Type 'add_user' to register a new user.");
+        System.out.println("6. Type 'del_user <username>' to delete an account.");
+        System.out.println("7. Type 'logout' to end the session.");
+
+        String action = userInput();
+
+        if (action.matches(ALL_USERS)) { getUsers(username);}
+        else if (action.matches(GET_PERMS)) {;}
+        else if (action.matches(SET_PERMS)) {;}
+        else if (action.matches(ASSIGN_TO_GROUP)) {;}
+        else if (action.matches(ADD_USER)) {;}
+        else if (action.matches(DEL_USER)) {;}
+        else if (action.matches(LOGOUT)) { logout();}
+        else { menuScreenAdmin(username);}
+    }
+
+    public void getUsers(String issuer) {
+        ;
+    }
+
+    public void menuScreenStaff(String username) {
+        ;
+    }
+
     public void menuScreenPatient(String username) throws Exception {
-        System.out.print("\n\nWELCOME BACK " + username);
-        System.out.println("1. Type 'my_records' to see your medical history.");
+        System.out.println("\n1. Type 'my_records' to see your medical history.");
         System.out.println("2. Type 'update_info' to update your contact information.");
         System.out.println("3. Type 'logout' to end the session.");
 
-        switch(s.nextLine()) {
-            case MY_RECORDS: see_records(tempUsername, tempUsername); break;
+        String action = userInput();
+
+        switch(action) {
+            case MY_RECORDS: see_records(username, username); menuScreenPatient(username); break;
             case LOGOUT: logout(); break;
-            case UPDATE_INFO: update_records(tempUsername, tempUsername); break;
-            default: menuScreenPatient(tempUsername); break;
+            case UPDATE_INFO: update_records(username, username); menuScreenPatient(username) ;break;
+            default: menuScreenPatient(username); break;
         }
     }
 
@@ -148,7 +203,7 @@ public class Main implements Serializable {
      * Sends requested credentials to the server for authentication/ verification
      * reasons. Upon successful authentication/ verification obtains the records
      * of the party requesting access.
-     * TODO: Add something so that a user can go back to the main menu - yes/ no?
+     * TODO: Add something so that a user can go back to the main menu --> no for now
      * @throws Exception
      */
     private void login() throws Exception {
@@ -163,7 +218,6 @@ public class Main implements Serializable {
             System.exit(0);
         }
         msg = new Message(tempUsername, tempPass, this);
-        //TODO: encrypt the message (another keypair will be needed bleh)
         /*to be fair for simplicity we will use the same key pair, but need to
         *include in the report that in the production normally there would be a different key pair
          */
@@ -184,12 +238,19 @@ public class Main implements Serializable {
             }
 
             checkLocked(status);       // check if the account has been locked
-            // Finally if everything went gucci obtain the context for that user
-            //TODO: Add context class to represent a context for a user
+            // Finally if everything went gucci display the screen corresponding to the user group
             if (status == CODE_CORRECT) {
-                System.out.println("Welcome " + tempUsername + "!");
+                System.out.print("\n\nWELCOME BACK " + tempUsername);
                 // helper
-                System.out.print("Your group: " + response.getGroup());
+//                System.out.print("Your group: " + response.getGroup());
+                switch(response.getGroup()) {
+                    case "Patients": menuScreenPatient(tempUsername);
+                    case "Admins":   menuScreenAdmin(tempUsername);
+//                    case "Nurses":   menuScreenStaff(tempUsername);
+//                    case "Doctors": menuScreenStaff(tempUsername);
+//                    case "Receptionists": menuScreenStaff(tempUsername);
+                    default: exit();
+                }
             }
         } else if (response.getStatus() == CREDENTIALS_BAD) {
             System.out.println("\n\n<Login error - incorrect credentials.>");
@@ -294,10 +355,10 @@ public class Main implements Serializable {
                 key = server.secretKeyGen();
                 createQRimage(tempUsername, key);
                 System.out.println("\nPlease scan the picture displayed.");
-                // ------------------------------- FOR VS CODE -----------------------------------//
-                 String command = "cmd.exe /c start " + "./" + tempUsername + "_QRcode.png";
-                // ------------------------------- FOR INTELLIJ --------------------------------//
-//                String command = "xdg-open " + tempUsername + "_QRcode.png";
+                // ------------------------------- FOR WINDOWS -----------------------------------//
+//                 String command = "cmd.exe /c start " + "./" + tempUsername + "_QRcode.png";
+                // ------------------------------- FOR LINUX --------------------------------//
+                String command = "xdg-open " + tempUsername + "_QRcode.png";
                 Runtime.getRuntime().exec(command);
                 System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);
                 break;

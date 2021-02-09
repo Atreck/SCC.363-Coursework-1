@@ -1,6 +1,7 @@
 package encryption;
 
 import main.Message;
+import main.SafeMessage;
 import org.apache.commons.codec.digest.Crypt;
 
 import javax.crypto.*;
@@ -272,6 +273,13 @@ public class CryptUtil {
 
 
 
+    public static Message decryptSafeMessage(String username, SafeMessage safeMessage) throws Exception {
+        PrivateKey serverPrivateKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, username);
+        SecretKey secretKey = CryptUtil.decrypt(safeMessage.getSecretKeyEncrypted(), serverPrivateKey);
+        Message data = CryptUtil.decrypt(safeMessage.getObj(), secretKey);
+
+        return data;
+    }
 
         /* Comment and uncomment depending on the need
         (should be a one-time use only for creating the server's key pair)

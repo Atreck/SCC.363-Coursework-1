@@ -38,70 +38,95 @@ public class RecordsUtil {
     private static final int CAN_READ_LOGS = 12;
 
 
+    // ------------------ TIMEOUT ------------------//
+    // timeout in milliseconds
+    //current timestamp - last_accessed >= timeout ----> log out a user
+    // 5 minutes
+    private static final long TIMEOUT = 300000;            // 5 mins
+
+
     public static boolean hasReadPatientsPermission(String username) throws IOException, ParseException {
         Context context = getContext(username);
         if (context.getPermissions().contains(CAN_READ_PATIENTS)) return true;
         return false;
     }
 
-    public static String readPatient(String username) throws IOException, ParseException {
-        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
-        JSONObject jo1 = (JSONObject) obj1;
-        // check to which group the user belongs to
-        String group = (String) jo1.get(username);
+    public static boolean hasUpdatePatientsPermission(String username) throws IOException, ParseException {
+        Context context = getContext(username);
+        if (context.getPermissions().contains(CAN_WRITE_PATIENTS)) return true;
+        return false;
+    }
 
-        // based on the group go into the correct user dir and file
-        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+    public static String readPatient(String username) throws IOException, ParseException {
+        // check to which group the user belongs to
+        String group = getGroup(username);
 
         // typecasting obj to JSONObject
-        JSONObject jo = (JSONObject) obj;
+        JSONObject jo = getUserJObj(username, group);
+
+        jo.put("last_active", System.currentTimeMillis());
+        updateUserJobj(username, group, jo);
 
         String records = (String) jo.get("records");
         return records;
     }
 
-    public static boolean isActive(String username) throws IOException, ParseException {
+    // dummy function just to update the last_active timestamp
+    public static void updatePatient(String username) throws IOException, ParseException {
+        String group = getGroup(username);
+
+        // typecasting obj to JSONObject
+        JSONObject jo = getUserJObj(username, group);
+
+        jo.put("last_active", System.currentTimeMillis());
+        updateUserJobj(username, group, jo);
+    }
+
+    private static String getGroup(String username) throws IOException, ParseException {
         Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
         JSONObject jo1 = (JSONObject) obj1;
         // check to which group the user belongs to
         String group = (String) jo1.get(username);
 
-        // based on the group go into the correct user dir and file
-        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+        return group;
+    }
+
+    private static JSONObject getUserJObj(String username, String group) throws IOException, ParseException {
+        Object obj2 = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
 
         // typecasting obj to JSONObject
-        JSONObject jo = (JSONObject) obj;
+        JSONObject jo2 = (JSONObject) obj2;
 
-        // read the value of active: 0 - inactive, 1 - active)
-        long active = (long) jo.get("active");
-        if (active == 0) return false;
-        else if (active == 1) return true;
-        else return false;
+        return  jo2;
+    }
+
+    private static void updateUserJobj(String username, String group, JSONObject obj) throws FileNotFoundException {
+        PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
+        pw.write(obj.toJSONString());
+
+        pw.flush();
+        pw.close();
     }
 
     public static Context getContext(String username) throws IOException, ParseException {
-        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
-        JSONObject jo1 = (JSONObject) obj1;
-        String group = (String) jo1.get(username);
+
+        String group = getGroup(username);
 
         // now check permissions associated with that group
         Object obj = new JSONParser().parse(new FileReader("src/Users/permissions.json"));
         JSONObject jo = (JSONObject) obj;
 
-        // get the active and locked flags
-        Object obj2 = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+        JSONArray ja = (JSONArray) jo.get(group);
 
         // typecasting obj to JSONObject
-        JSONObject jo2 = (JSONObject) obj2;
+        JSONObject jo2 = getUserJObj(username, group);
 
         long active = (long) jo2.get("active");
         long locked = (long) jo2.get("locked");
 
         HashSet<Long> permissions = new HashSet<>();
 
-        JSONArray ja = (JSONArray) jo.get(group);
-
-        // iterating phoneNumbers
+        // iterating through permissions
         Iterator itr2 = ja.iterator();
 
         while (itr2.hasNext())
@@ -114,40 +139,43 @@ public class RecordsUtil {
     }
 
     public static void login(String username) throws IOException, ParseException {
-        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
-        JSONObject jo1 = (JSONObject) obj1;
-        String group = (String) jo1.get(username);
-        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+        String group = getGroup(username);
 
         // typecasting obj to JSONObject
-        JSONObject jo = (JSONObject) obj;
+        JSONObject jo = getUserJObj(username, group);
 
-        // active indicates whether a user has been authenticated, etc and logged in successfully or exited the sytem
+        // active indicates whether a user has been authenticated, etc and logged in successfully or exited the system
         // 0 - inactive
         // 1 - active
         jo.put("active", 1);
-        PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
-        pw.write(jo.toJSONString());
-
-        pw.flush();
-        pw.close();
+        // add a timestamp
+        jo.put("last_active", System.currentTimeMillis());
+        updateUserJobj(username, group, jo);
     }
 
     public static void logout(String username) throws IOException, ParseException {
-        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
-        JSONObject jo1 = (JSONObject) obj1;
-        String group = (String) jo1.get(username);
-        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+        String group = getGroup(username);
 
-        // typecasting obj to JSONObject
-        JSONObject jo = (JSONObject) obj;
+        JSONObject jo = getUserJObj(username, group);
 
         jo.put("active", 0);
-        PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
-        pw.write(jo.toJSONString());
 
-        pw.flush();
-        pw.close();
+    }
+
+    public static void blockUser(String username) throws IOException, ParseException {
+        String group = getGroup(username);
+        JSONObject obj = getUserJObj(username, group);
+
+        obj.put("locked", 1);
+        updateUserJobj(username, group, obj);
+    }
+
+    public static void unblockUser(String username) throws IOException, ParseException {
+        String group = getGroup(username);
+        JSONObject obj = getUserJObj(username, group);
+
+        obj.put("locked", 0);
+        updateUserJobj(username, group, obj);
     }
 
     public static boolean userExists(String username) throws IOException, ParseException {
@@ -161,14 +189,25 @@ public class RecordsUtil {
         return false;
     }
 
+    public static boolean inactiveTimeout(String username) throws IOException, ParseException {
+        String group = getGroup(username);
+        JSONObject obj = getUserJObj(username, group);
+
+        long lastActive = (long) obj.get("last_active");
+
+        if (System.currentTimeMillis() - lastActive >= TIMEOUT) {
+            obj.put("active", 0);
+            updateUserJobj(username, group, obj);
+            return true;
+        } return false;
+    }
+
     public static int passMatches(String username, String providedPass) throws Exception {
-        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
-        JSONObject jo1 = (JSONObject) obj1;
-        String group = (String) jo1.get(username);
-        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
+
+        String group = getGroup(username);
 
         // typecasting obj to JSONObject
-        JSONObject jo = (JSONObject) obj;
+        JSONObject jo = (getUserJObj(username, group));
 
         String correctHash = (String) jo.get("passHash");
         String salt = (String) jo.get("salt");
@@ -180,34 +219,21 @@ public class RecordsUtil {
 
         if (thisHash.equals(correctHash)) {
             jo.put("tries", TRIES);     // reset tries
-            PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
-            pw.write(jo.toJSONString());
-
-            pw.flush();
-            pw.close();
+            updateUserJobj(username, group, jo);
             return PASS_OK;
         }
         else {
             tries -= 1;
             jo.put("tries", tries);
-            PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
-            pw.write(jo.toJSONString());
-
-            pw.flush();
-            pw.close();
+            updateUserJobj(username, group, jo);
             if (tries == 0) return LOCKED;
             else return CREDENTIALS_BAD;
         }
     }
 
     public static int codeMatches(String username, String providedCode) throws Exception {
-        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
-        JSONObject jo1 = (JSONObject) obj1;
-        String group = (String) jo1.get(username);
-        Object obj = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
-
-        // typecasting obj to JSONObject
-        JSONObject jo = (JSONObject) obj;
+        String group = getGroup(username);
+        JSONObject jo = getUserJObj(username, group);
 
         String correctCode = (String) jo.get("authKey");
         String code = "";
@@ -222,21 +248,13 @@ public class RecordsUtil {
 
         if (providedCode.equals(code)) {
             jo.put("tries", TRIES);     // reset tries
-            PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
-            pw.write(jo.toJSONString());
-
-            pw.flush();
-            pw.close();
+            updateUserJobj(username, group, jo);
             return CODE_CORRECT;
         }
         else {
             tries -= 1;
             jo.put("tries", tries);
-            PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
-            pw.write(jo.toJSONString());
-
-            pw.flush();
-            pw.close();
+            updateUserJobj(username, group, jo);
             if (tries == 0) return LOCKED;
             else return CODE_INCORRECT;
         }
@@ -269,6 +287,7 @@ public class RecordsUtil {
         jo.put("authKey", code);
         jo.put("tries", 3);
         jo.put("active", 0);
+        jo.put("last_active", 0);
 
         PrintWriter pw = new PrintWriter(String.format("src/Users/Patients/%s.json", username));
         pw.write(jo.toJSONString());
@@ -305,6 +324,7 @@ public class RecordsUtil {
         jo.put("authKey", code);
         jo.put("tries", 3);
         jo.put("active", 0);
+        jo.put("last_active", 0);
 
         PrintWriter pw = new PrintWriter(String.format("src/Users/Admins/%s.json", username));
         pw.write(jo.toJSONString());

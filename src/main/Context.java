@@ -26,4 +26,12 @@ public class Context implements Serializable {
     public HashSet<Long> getPermissions() {
         return permissions;
     }
+
+    public long getActive() {
+        return active;
+    }
+
+    public long getLocked() {
+        return locked;
+    }
 }
