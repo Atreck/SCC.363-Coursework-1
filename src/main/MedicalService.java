@@ -66,8 +66,6 @@ public interface MedicalService extends Remote {
     }
 
     String secretKeyGen() throws Exception;
-
-    void createQRimage(String username, String code) throws Exception;
     
     void lockUser(String user) throws Exception;
 }

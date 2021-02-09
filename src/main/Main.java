@@ -1,5 +1,9 @@
 package main;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import encryption.CryptUtil;
 import signatures.SignUtil;
 
@@ -8,6 +12,8 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.rmi.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
@@ -286,7 +292,9 @@ public class Main implements Serializable {
             String cmd = userInput();
             if(cmd.equals("yes")) {
                 key = server.secretKeyGen();
+                createQRimage(tempUsername, key);
                 System.out.println("\nPlease scan the picture displayed.");
+                // probably I will need to change it to src/......
                 Runtime.getRuntime().exec("cmd.exe /c start " + "./" + msg.getUsername() + "_QRcode.png");
                 System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);
                 break;
@@ -298,6 +306,13 @@ public class Main implements Serializable {
         }
         // Runtime.getRuntime().exec("cmd /c start del /S *.png");  //will delete all .png files in current dir (will implement later on)
         return key;
+    }
+
+    public void createQRimage(String username, String code) throws Exception {
+        String content = "otpauth://totp/MedicalPortal: " + username + "?secret=" + code + "&algorithm=SHA1&digits=6&period=30";
+        BitMatrix matrix = new QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, 200, 200);
+        Path path = FileSystems.getDefault().getPath("./" + username + "_QRcode.png");
+        MatrixToImageWriter.writeToPath(matrix, "PNG", path);
     }
 
     public String signChallenge(String challenge) throws Exception {

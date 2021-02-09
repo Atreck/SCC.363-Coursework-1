@@ -176,10 +176,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String surname = message.getSurname();
         String code = message.getCode();
 
-        if (!code.equals("none")) {
-            createQRimage(username, code);
-        }
-
         boolean passStrong = strengthCheck(password);
         if (!passStrong) { return REGISTRATION_FAIL;}
 
@@ -221,13 +217,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         new SecureRandom().nextBytes(bytes);
     	return new Base32().encodeToString(bytes);
 	}
-
-    public void createQRimage(String username, String code) throws Exception {
-        String content = "otpauth://totp/MedicalPortal: " + username + "?secret=" + code + "&algorithm=SHA1&digits=6&period=30";
-        BitMatrix matrix = new QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, 200, 200);
-        Path path = FileSystems.getDefault().getPath("./" + username + "_QRcode.png");
-        MatrixToImageWriter.writeToPath(matrix, "PNG", path);
-    }
 
     public void logout(SafeMessage safeMessage) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, ClassNotFoundException,
             InvalidKeyException, BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException {
