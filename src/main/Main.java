@@ -294,8 +294,11 @@ public class Main implements Serializable {
                 key = server.secretKeyGen();
                 createQRimage(tempUsername, key);
                 System.out.println("\nPlease scan the picture displayed.");
-                // probably I will need to change it to src/......
-                Runtime.getRuntime().exec("cmd.exe /c start " + "./" + msg.getUsername() + "_QRcode.png");
+                // ------------------------------- FOR VS CODE -----------------------------------//
+                 String command = "cmd.exe /c start " + "./" + tempUsername + "_QRcode.png";
+                // ------------------------------- FOR INTELLIJ --------------------------------//
+//                String command = "xdg-open " + tempUsername + "_QRcode.png";
+                Runtime.getRuntime().exec(command);
                 System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);
                 break;
             } else if(cmd.equals("no")) {
