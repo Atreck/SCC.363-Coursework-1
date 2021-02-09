@@ -1,1 +1,1 @@
-{"summary":"None","authKey":"MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU","tries":3,"salt":"[B@39c0f4a","records":"None","surname":"Doe","name":"Joe","passHash":"4991664b5017dd514e021bc0d604d866","prescriptions":"None","email":"jdoe@email.com", "active":  0, "locked": 0}
+{"summary":"None","authKey":"MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU","tries":3,"salt":"[B@39c0f4a","records":"None","surname":"Doe","name":"Joe","active":0,"passHash":"4991664b5017dd514e021bc0d604d866","locked":0,"prescriptions":"None","email":"jdoe@email.com"}
