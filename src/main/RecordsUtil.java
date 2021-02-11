@@ -83,7 +83,7 @@ public class RecordsUtil {
     }
 
     private static String getGroup(String username) throws IOException, ParseException {
-        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        Object obj1 = new JSONParser().parse(new FileReader("./Users/users.json"));
         JSONObject jo1 = (JSONObject) obj1;
         // check to which group the user belongs to
         String group = (String) jo1.get(username);
@@ -92,16 +92,15 @@ public class RecordsUtil {
     }
 
     private static JSONObject getUserJObj(String username, String group) throws IOException, ParseException {
-        Object obj2 = new JSONParser().parse(new FileReader(String.format("src/Users/%s/%s.json", group, username)));
-
+        Object obj2 = new JSONParser().parse(new FileReader(String.format("./Users/%s/%s.json", group, username)));
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj2;
 
-        return  jo2;
+        return jo2;
     }
 
     private static void updateUserJobj(String username, String group, JSONObject obj) throws FileNotFoundException {
-        PrintWriter pw = new PrintWriter(String.format("src/Users/%s/%s.json", group, username));
+        PrintWriter pw = new PrintWriter(String.format("./Users/%s/%s.json", group, username));
         pw.write(obj.toJSONString());
 
         pw.flush();
@@ -113,28 +112,25 @@ public class RecordsUtil {
         String group = getGroup(username);
 
         // now check permissions associated with that group
-        Object obj = new JSONParser().parse(new FileReader("src/Users/permissions.json"));
+        Object obj = new JSONParser().parse(new FileReader("./Users/permissions.json"));
         JSONObject jo = (JSONObject) obj;
 
         JSONArray ja = (JSONArray) jo.get(group);
 
         // typecasting obj to JSONObject
         JSONObject jo2 = getUserJObj(username, group);
-
         long active = (long) jo2.get("active");
         long locked = (long) jo2.get("locked");
 
+        System.out.println("HERE1");
         HashSet<Long> permissions = new HashSet<>();
-
         // iterating through permissions
         Iterator itr2 = ja.iterator();
-
         while (itr2.hasNext())
         {
             long permission = (long) itr2.next();
             permissions.add(permission);
         }
-
         return new Context(group, active, locked, permissions);
     }
 
@@ -179,7 +175,7 @@ public class RecordsUtil {
     }
 
     public static boolean userExists(String username) throws IOException, ParseException {
-        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        Object obj = new JSONParser().parse(new FileReader("./Users/users.json"));
 
         // typecasting obj to JSONObject
         JSONObject jo = (JSONObject) obj;
@@ -289,16 +285,16 @@ public class RecordsUtil {
         jo.put("active", 0);
         jo.put("last_active", 0);
 
-        PrintWriter pw = new PrintWriter(String.format("src/Users/Patients/%s.json", username));
+        PrintWriter pw = new PrintWriter(String.format("./Users/Patients/%s.json", username));
         pw.write(jo.toJSONString());
         pw.flush();
         pw.close();
 
         // add to user -> group mapping file
-        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        Object obj = new JSONParser().parse(new FileReader("./Users/users.json"));
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj;
-        PrintWriter pw2 = new PrintWriter("src/Users/users.json");
+        PrintWriter pw2 = new PrintWriter("./Users/users.json");
         jo2.put(username, "Patients");
         pw2.write(jo2.toJSONString());
         pw2.flush();
@@ -325,17 +321,18 @@ public class RecordsUtil {
         jo.put("tries", 3);
         jo.put("active", 0);
         jo.put("last_active", 0);
+        jo.put("locked", 0);
 
-        PrintWriter pw = new PrintWriter(String.format("src/Users/Admins/%s.json", username));
+        PrintWriter pw = new PrintWriter(String.format("./Users/Admins/%s.json", username));
         pw.write(jo.toJSONString());
         pw.flush();
         pw.close();
 
         // add to user -> group mapping file
-        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        Object obj = new JSONParser().parse(new FileReader("./Users/users.json"));
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj;
-        PrintWriter pw2 = new PrintWriter("src/Users/users.json");
+        PrintWriter pw2 = new PrintWriter("./Users/users.json");
         jo2.put(username, "Admins");
         pw2.write(jo2.toJSONString());
         pw2.flush();

@@ -1,32 +1,35 @@
 package main;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
 import java.rmi.Naming;
-import java.security.*;
-import java.security.spec.InvalidKeySpecException;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.util.Random;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import com.google.zxing.qrcode.QRCodeWriter;
-import encryption.CryptUtil;
-import org.apache.commons.codec.binary.*;
-import de.taimos.totp.*;
+import javax.crypto.SealedObject;
+import javax.crypto.SecretKey;
+
+import org.apache.commons.codec.binary.Base32;
 import org.json.simple.parser.ParseException;
+
+import encryption.CryptUtil;
 import signatures.SignUtil;
-
-import com.google.zxing.*;
-import com.google.zxing.common.*;
-import com.google.zxing.client.j2se.*;
-
-import javax.crypto.*;
-import java.nio.file.*;
 
 public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService {
 
-    //TODO: Add docs and comments.
+    // TODO: Add docs and comments.
 
     // ----------------- STATUS CODES --------------//
     public static final int CHALLENGE_LEN = 50;
@@ -43,14 +46,21 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     private final int FORBIDDEN = 403;
     private final int INACTIVE_TIMEOUT = 408;
     private final int AUTH_REQUIRED = 511;
-//    private final int NOT_ALLOWED = 405;
+    // private final int NOT_ALLOWED = 405;
     private final int ERROR = 400;
 
+    private static final Logger logger = Logger.getLogger(Server.class.getName());
 
     public Server() throws Exception {
         super();
-//        addAdmin("admin", "Joe", "Admindoe", "superUser89@pass", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
-//        addPatient(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy hh-mm-ss a");
+        String currentLog = sdf.format(new Date()) + ".txt";
+        File file = new File("./Logs/" + currentLog);
+        
+        logger.addHandler(new FileHandler("./Logs/" + currentLog, true));
+        file.setReadOnly();
+        addAdmin("admin", "Joe", "Admindoe", "superUser89@pass","BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
+        addPatient(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
     public SafeMessage authenticateUser(SafeMessage safeMessage) throws Exception {
@@ -63,15 +73,27 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         System.out.println("** Authenticating user: " + username);
         boolean signCorrect = challengeUser(client, username);
         Message msg = new Message(CREDENTIALS_BAD);
-        if (!signCorrect) { return prepResponse(msg, username); }
+        if (!signCorrect) {
+            logger.warning("Failed challenge : " + username);
+            return prepResponse(msg, username);
+        }
+        logger.info("Challenged : " + username);
 
         System.out.println("** Validating username for : " + username);
         boolean username_valid = RecordsUtil.userExists(username);
         System.out.println("** Username valid: " + username_valid);
         int pass_valid = this.verifyPassword(username, pass);
-        if (RecordsUtil.getContext(username).getLocked() == 1) { msg = new Message(LOCKED); }
-        else if (username_valid && pass_valid == PASS_OK) { msg = new Message(CREDENTIALS_OK); }
-        else if (pass_valid == LOCKED) { msg = new Message(LOCKED); }
+
+        if (RecordsUtil.getContext(username).getLocked() == 1) {
+            logger.warning("Credentials not OK : " + username);
+            msg = new Message(LOCKED);
+        } else if (username_valid && pass_valid == PASS_OK) {
+            logger.info("Credentials OK : " + username);
+            msg = new Message(CREDENTIALS_OK);
+        } else if (pass_valid == LOCKED) {
+            logger.warning("Credentials not OK : " + username);
+            msg = new Message(LOCKED);
+        }
 
         return prepResponse(msg, username);
     }
@@ -95,7 +117,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         PublicKey pubKey = CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, username);
         boolean signCorrect = SignUtil.verifyChallenge(signedChallenge, challenge, pubKey);
         System.out.println("** Challenge correctly signed: " + signCorrect);
-
         return signCorrect;
     }
 
@@ -106,21 +127,24 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return signed;
     }
 
-    public int verifyPassword(String username, String pass) throws  Exception {
+    public int verifyPassword(String username, String pass) throws Exception {
         System.out.println("** Verifying password for user: " + username);
         int status = RecordsUtil.passMatches(username, pass);
 
-        if(status == LOCKED) {
-            //Add implementation in Server.java to lock out user using the lockUser() method.
+        if (status == LOCKED) {
+            // Add implementation in Server.java to lock out user using the lockUser()
+            // method.
             System.out.println("** Password incorrect - account locked for user: " + username);
             lockUser(username);
+            logger.info("PASS LOCKED : " + username);
             return LOCKED;
-        }
-        else if (status == CREDENTIALS_BAD) {
+        } else if (status == CREDENTIALS_BAD) {
             System.out.println("** Password incorrect for user: " + username);
+            logger.info("Password incorrect : " + username);
             return CREDENTIALS_BAD;
         }
         // else pass is ok
+        logger.info("Password accepted : " + username);
         System.out.println("** Password correct for user: " + username);
         return PASS_OK;
     }
@@ -128,29 +152,34 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     public SafeMessage verifyCode(SafeMessage safeMessage) throws Exception {
         Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
         String username = message.getUsername();
-        String code = message.getPassword();  // password field can be used to carry code as well
-
+        String code = message.getPassword(); // password field can be used to carry code as well
 
         System.out.println("** Verifying code for user: " + username);
         int status = RecordsUtil.codeMatches(username, code);
+        logger.info("Verifying code : " + username);
 
         if (status == LOCKED) {
-            //Add implementation in Server.java to lock out user using the lockUser() method
+            // Add implementation in Server.java to lock out user using the lockUser()
+            // method
             lockUser(username);
             System.out.println("** Incorrect code - account has been locked for user: " + username);
+            logger.warning("AUTH CODE LOCKED : " + username);
             Message msg = new Message(LOCKED);
             return prepResponse(msg, username);
-        }
-        else if (status == CODE_INCORRECT) {
+        } else if (status == CODE_INCORRECT) {
             System.out.println("** Incorrect code for user: " + username);
+            logger.warning("Auth code not OK : " + username);
             Message msg = new Message(CODE_INCORRECT);
             return prepResponse(msg, username);
         }
         System.out.println("** Verification code correct for user: " + username);
+        logger.info("Auth code OK : " + username);
         Context context = RecordsUtil.getContext(username);
         System.out.println();
         Message msg = new Message(CODE_CORRECT, context.getGroup());
-        if (status == CODE_CORRECT) { RecordsUtil.login(username);}
+        if (status == CODE_CORRECT) {
+            RecordsUtil.login(username);
+        }
 
         return prepResponse(msg, username);
     }
@@ -163,34 +192,34 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String surname = message.getSurname();
         String code = message.getCode();
 
-        boolean passStrong = strengthCheck(password);
-        if (!passStrong) { return REGISTRATION_FAIL;}
-
-        boolean userExists = RecordsUtil.userExists(username);
-        if (!userExists) {
+        if (!RecordsUtil.userExists(username)) {
             RecordsUtil.addPatient(username, name, surname, email, password, code);
             register(username);
+            logger.info("Registered new user : " + username);
             return REGISTRATION_SUCCESS;
         }
+        logger.warning("Registration fail : " + username);
         return REGISTRATION_FAIL;
     }
 
-//    public SafeMessage addUser(SafeMessage safeMessage) throws Exception {
-//        Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
-//
-//        String issuer = message.getUsername();
-//    }
+    // public SafeMessage addUser(SafeMessage safeMessage) throws Exception {
+    // Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
+    //
+    // String issuer = message.getUsername();
+    // }
 
     public void addAdmin(String username, String name, String surname, String password, String code) throws Exception {
         // first letter of a name + surname + @mediservice.com to create staff emails
         String email = name.substring(0, 1) + surname + "@mediservice.com";
 
-//      Commented out as there was a qr image already created for this one
-//        String key = secretKeyGen();
-//      createQRimage(username, code);
+        // Commented out as there was a qr image already created for this one
+        // String key = secretKeyGen();
+        // createQRimage(username, code);
         boolean passStrong = strengthCheck(password);
+
         if (!passStrong) {
             System.out.println("** Admin registration failed - pass too weak");
+            logger.warning("Admin pass registration fail : " + username);
             return;
         }
 
@@ -199,22 +228,57 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             RecordsUtil.addAdmin(username, name, surname, email, password, code);
             register(username);
             System.out.println("** Admin registration successful with username: " + username);
+            logger.info("Admin registration : " + username);
             return;
         }
         System.out.println("** Admin registration failed, account with such username may already exist.");
+        logger.warning("Admin registration fail : " + username);
+    }
 
+    public boolean strengthCheck(String input) throws Exception {
+        Pattern p = Pattern.compile("[^A-Za-z0-9 ]"); // Find character not in that list
+        Matcher m = p.matcher(input);
+
+        if (m.find()) { // If a special character is found
+            p = Pattern.compile("[0-9]");
+            m = p.matcher(input);
+
+            if (m.find()) {
+                p = Pattern.compile("[A-Z]");
+                m = p.matcher(input);
+
+                if (m.find()) {
+                    p = Pattern.compile("[a-z]");
+                    m = p.matcher(input);
+
+                    if ((m.find()) && (input.length() > 9)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public void register(String user) throws Exception {
+        System.out.println("User created with username: " + user);
+        // Generate a key pair for the newly added user
+        CryptUtil.genKeyPair(CryptUtil.ALGO_NAME, user);
+    }
+
+    public boolean strengthCheck(Message m) throws Exception {
+        return strengthCheck(m.getPassword());
     }
 
     /**
      * Generates a secret key.
+     * 
      * @return a secret key used for symmetric encryption
      * @throws Exception
      */
     public String secretKeyGen() throws Exception {
-		byte[] bytes = new byte[20];
+        byte[] bytes = new byte[20];
         new SecureRandom().nextBytes(bytes);
-    	return new Base32().encodeToString(bytes);
-	}
+        return new Base32().encodeToString(bytes);
+    }
 
     public void logout(SafeMessage safeMessage) throws Exception {
         Message data = CryptUtil.decryptSafeMessage("server", safeMessage);
@@ -243,7 +307,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         Message data = CryptUtil.decryptSafeMessage("server", safeMessage);
         // Extract data from the message
         String issuer = data.getUsername();
-        String usertosee = data.getPassword();        // password field can be used to carry this this info
+        String usertosee = data.getPassword(); // password field can be used to carry this this info
 
         // check if inactiveTimeout == true
         // if true - evict
@@ -259,7 +323,8 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String records = "";
         Message message = new Message(FORBIDDEN, records);
         boolean status = false;
-        // we check if it is a Patient just accessing their own data or is it someone else
+        // we check if it is a Patient just accessing their own data or is it someone
+        // else
         String group = RecordsUtil.getContext(issuer).getGroup();
         if (!issuer.equals(usertosee)) {
             status = RecordsUtil.hasReadPatientsPermission(issuer);
@@ -267,7 +332,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
                 records = RecordsUtil.readPatient(usertosee);
                 message = new Message(OK, records);
             }
-        } else if (group.equals("Patients")) {         // issuer is the same as the user to see and belongs to Patients
+        } else if (group.equals("Patients")) { // issuer is the same as the user to see and belongs to Patients
             records = RecordsUtil.readPatient(usertosee);
             message = new Message(OK, records);
         }
@@ -275,15 +340,15 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return prepResponse(message, issuer);
     }
 
-    //TODO: change it to hasWriteUserPerm and add a separate method for updating Patients only
-    public SafeMessage updateRecords(SafeMessage safeMessage)
-            throws Exception {
+    // TODO: change it to hasWriteUserPerm and add a separate method for updating
+    // Patients only
+    public SafeMessage updateRecords(SafeMessage safeMessage) throws Exception {
 
         Message data = CryptUtil.decryptSafeMessage("server", safeMessage);
 
         // Extract data from the message
         String issuer = data.getUsername();
-        String usertosee = data.getPassword();        // password field can be used to carry this this info
+        String usertosee = data.getPassword(); // password field can be used to carry this this info
 
         int inactiveOrAnauth = checkTimeoutAndActive(issuer);
 
@@ -292,12 +357,15 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             return prepResponse(msg1, issuer);
         }
 
-        /* I will not include the actual update information, so it is kind of just a simulation
-           instead I will just send a response (OK - updated, FORBIDDEN - not updated, lack of permissions)
+        /*
+         * I will not include the actual update information, so it is kind of just a
+         * simulation instead I will just send a response (OK - updated, FORBIDDEN - not
+         * updated, lack of permissions)
          */
         Message message = new Message(FORBIDDEN);
         boolean status = false;
-        // we check if it is a Patient just accessing their own data or is it someone else
+        // we check if it is a Patient just accessing their own data or is it someone
+        // else
         String group = RecordsUtil.getContext(issuer).getGroup();
         if (!issuer.equals(usertosee)) {
             System.out.println("Update user");
@@ -307,7 +375,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
                 RecordsUtil.updatePatient(usertosee);
                 message = new Message(OK);
             }
-        } else if (group.equals("Patients")) {         // issuer is the same as the user to see and belongs to Patients
+        } else if (group.equals("Patients")) { // issuer is the same as the user to see and belongs to Patients
             // here we update records and send back an OK message
             RecordsUtil.updatePatient(usertosee);
             message = new Message(OK);
@@ -316,9 +384,9 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return prepResponse(message, issuer);
     }
 
-
     public void lockUser(String user) throws Exception {
-        // Okay this is just so beautiful, can we leave it like that please hahahah ~ Kas
+        // Okay this is just so beautiful, can we leave it like that please hahahah ~
+        // Kas
         System.out.println("SKIDADDLE SKIDOODLE THE USER " + user + " IS NOW A NOODLE");
         RecordsUtil.blockUser(user);
     }
@@ -329,7 +397,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             MedicalService server = new Server();
             Naming.rebind("rmi://localhost/MedicalService", server);
             System.out.println("Server running at rmi://localhost/MedicalService");
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.out.println("Server error: " + e);
         }
     }

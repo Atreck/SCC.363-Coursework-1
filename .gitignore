@@ -20,7 +20,10 @@ settings.json
 *.tar.gz
 *.rar
 
-# Code files/security files
+# Code files/security files#
+*.png
+*.jpg
+Logs/
 Keys/
 GUItest.java
 

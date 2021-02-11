@@ -67,8 +67,8 @@ public class CryptUtil {
         // Keys can be 1024 or 2048-bit long (the longer the harder to crack)
         KeyPair pair = keyGen.generateKeyPair();
 
-        saveInFile("src/Keys/" + user + "/PublicKey", pair.getPublic().getEncoded());
-        saveInFile("src/Keys/" + user + "/PrivateKey", pair.getPrivate().getEncoded());
+        saveInFile("./Keys/" + user + "/PublicKey", pair.getPublic().getEncoded());
+        saveInFile("./Keys/" + user + "/PrivateKey", pair.getPrivate().getEncoded());
 
         return pair;
     }
@@ -102,9 +102,9 @@ public class CryptUtil {
             throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
         // -------------------- FOR VS CODE ---------------------------------
-//        String path = String.format("Keys/%s/PrivateKey", username);
+        String path = String.format(System.getProperty("user.dir") + "/Keys/%s/PrivateKey", username);
         // -------------------- FOR INTELLIJ --------------------------------
-        String path = String.format("src/Keys/%s/PrivateKey", username);
+        // String path = String.format("src/Keys/%s/PrivateKey", username);
         FileInputStream fis = new FileInputStream(path);
         byte[] privateKey = fis.readAllBytes();
 
@@ -128,9 +128,10 @@ public class CryptUtil {
             InvalidKeySpecException, IOException {
 
         // -------------------- FOR VS CODE ---------------------------------
-//        String path = String.format("Keys/%s/PublicKey", username);
+       String path = String.format(System.getProperty("user.dir") + "/Keys/%s/PublicKey", username);
+       
         // -------------------- FOR INTELLIJ --------------------------------
-        String path = String.format("src/Keys/%s/PublicKey", username);
+        // String path = String.format("src/Keys/%s/PublicKey", username);
 
         FileInputStream fis = new FileInputStream(path);
         byte[] pubKey = fis.readAllBytes();

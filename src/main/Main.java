@@ -1,23 +1,25 @@
 package main;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
-import encryption.CryptUtil;
-import signatures.SignUtil;
-
-import javax.crypto.SealedObject;
-import javax.crypto.SecretKey;
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.rmi.*;
-import java.security.*;
-import java.security.spec.InvalidKeySpecException;
-import java.util.*;
+import java.rmi.Naming;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.Random;
+import java.util.Scanner;
+
+import javax.crypto.SealedObject;
+import javax.crypto.SecretKey;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+
+import encryption.CryptUtil;
+import signatures.SignUtil;
 
 public class Main implements Serializable {
 
@@ -42,7 +44,7 @@ public class Main implements Serializable {
     private final String MY_RECORDS = "my_records";
     private final String UPDATE_INFO = "update_info";
 
-    //Admin-specific actions
+    // Admin-specific actions
     // some regexes
     private final String ALL_USERS = "all_users";
     private final String GET_PERMS = "get_perms\\s\\w+";
@@ -63,10 +65,10 @@ public class Main implements Serializable {
     private final int FORBIDDEN = 403;
     private final int INACTIVE_TIMEOUT = 408;
     private final int AUTH_REQUIRED = 511;
-    //    private final int NOT_ALLOWED = 405;
+    // private final int NOT_ALLOWED = 405;
     private final int ERROR = 400;
 
-    //TODO: Add docs and comments.
+    // TODO: Add docs and comments.
 
     public Main() throws Exception {
         mainScreen();
@@ -129,14 +131,23 @@ public class Main implements Serializable {
 
         String action = userInput();
 
-        if (action.matches(ALL_USERS)) { getUsers(username);}
-        else if (action.matches(GET_PERMS)) {;}
-        else if (action.matches(SET_PERMS)) {;}
-        else if (action.matches(ASSIGN_TO_GROUP)) {;}
-        else if (action.matches(ADD_USER)) {;}
-        else if (action.matches(DEL_USER)) {;}
-        else if (action.matches(LOGOUT)) { logout();}
-        else { menuScreenAdmin(username);}
+        if (action.matches(ALL_USERS)) {
+            getUsers(username);
+        } else if (action.matches(GET_PERMS)) {
+            ;
+        } else if (action.matches(SET_PERMS)) {
+            ;
+        } else if (action.matches(ASSIGN_TO_GROUP)) {
+            ;
+        } else if (action.matches(ADD_USER)) {
+            ;
+        } else if (action.matches(DEL_USER)) {
+            ;
+        } else if (action.matches(LOGOUT)) {
+            logout();
+        } else {
+            menuScreenAdmin(username);
+        }
     }
 
     public void getUsers(String issuer) {
@@ -154,11 +165,21 @@ public class Main implements Serializable {
 
         String action = userInput();
 
-        switch(action) {
-            case MY_RECORDS: see_records(username, username); menuScreenPatient(username); break;
-            case LOGOUT: logout(); break;
-            case UPDATE_INFO: update_records(username, username); menuScreenPatient(username) ;break;
-            default: menuScreenPatient(username); break;
+        switch (action) {
+            case MY_RECORDS:
+                see_records(username, username);
+                menuScreenPatient(username);
+                break;
+            case LOGOUT:
+                logout();
+                break;
+            case UPDATE_INFO:
+                update_records(username, username);
+                menuScreenPatient(username);
+                break;
+            default:
+                menuScreenPatient(username);
+                break;
         }
     }
 
@@ -169,11 +190,19 @@ public class Main implements Serializable {
         System.out.println("3. Type 'exit' to quit the service.");
         System.out.print("\n> ");
 
-        switch(s.nextLine()) {
-            case REGISTER: register(); break;
-            case LOGIN: login(); break;
-            case EXIT: exit(); break;
-            default: mainScreen(); break;
+        switch (s.nextLine()) {
+            case REGISTER:
+                register();
+                break;
+            case LOGIN:
+                login();
+                break;
+            case EXIT:
+                exit();
+                break;
+            default:
+                mainScreen();
+                break;
         }
     }
 
@@ -198,12 +227,13 @@ public class Main implements Serializable {
     }
 
     /**
-     * Displays a screen prompting for a username and password as well
-     * as a secret code to authenticate a party requesting access.
-     * Sends requested credentials to the server for authentication/ verification
-     * reasons. Upon successful authentication/ verification obtains the records
-     * of the party requesting access.
-     * TODO: Add something so that a user can go back to the main menu --> no for now
+     * Displays a screen prompting for a username and password as well as a secret
+     * code to authenticate a party requesting access. Sends requested credentials
+     * to the server for authentication/ verification reasons. Upon successful
+     * authentication/ verification obtains the records of the party requesting
+     * access. TODO: Add something so that a user can go back to the main menu -->
+     * no for now
+     * 
      * @throws Exception
      */
     private void login() throws Exception {
@@ -218,8 +248,10 @@ public class Main implements Serializable {
             System.exit(0);
         }
         msg = new Message(tempUsername, tempPass, this);
-        /*to be fair for simplicity we will use the same key pair, but need to
-        *include in the report that in the production normally there would be a different key pair
+        /*
+         * to be fair for simplicity we will use the same key pair, but need to include
+         * in the report that in the production normally there would be a different key
+         * pair
          */
         SafeMessage encryptedMsg = prepMessage(msg);
         SafeMessage sealedResponse = server.authenticateUser(encryptedMsg);
@@ -229,7 +261,7 @@ public class Main implements Serializable {
 
         response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
         if (response.getStatus() == CREDENTIALS_OK) {
-            response = takeCode();      // proceed with code verification
+            response = takeCode(); // proceed with code verification
             status = response.getStatus();
             while (status == CODE_INCORRECT) {
                 System.out.println("\n\n<Code incorrect, please try again.>");
@@ -237,19 +269,23 @@ public class Main implements Serializable {
                 status = response.getStatus();
             }
 
-            checkLocked(status);       // check if the account has been locked
-            // Finally if everything went gucci display the screen corresponding to the user group
+            checkLocked(status); // check if the account has been locked
+            // Finally if everything went gucci display the screen corresponding to the user
+            // group
             if (status == CODE_CORRECT) {
                 System.out.print("\n\nWELCOME BACK " + tempUsername);
                 // helper
-//                System.out.print("Your group: " + response.getGroup());
-                switch(response.getGroup()) {
-                    case "Patients": menuScreenPatient(tempUsername);
-                    case "Admins":   menuScreenAdmin(tempUsername);
-//                    case "Nurses":   menuScreenStaff(tempUsername);
-//                    case "Doctors": menuScreenStaff(tempUsername);
-//                    case "Receptionists": menuScreenStaff(tempUsername);
-                    default: exit();
+                // System.out.print("Your group: " + response.getGroup());
+                switch (response.getGroup()) {
+                    case "Patients":
+                        menuScreenPatient(tempUsername);
+                    case "Admins":
+                        menuScreenAdmin(tempUsername);
+                        // case "Nurses": menuScreenStaff(tempUsername);
+                        // case "Doctors": menuScreenStaff(tempUsername);
+                        // case "Receptionists": menuScreenStaff(tempUsername);
+                    default:
+                        exit();
                 }
             }
         } else if (response.getStatus() == CREDENTIALS_BAD) {
@@ -263,16 +299,18 @@ public class Main implements Serializable {
 
     private void checkLocked(int status) {
         if (status == LOCKED) {
-            //Add implementation in Server.java to lock out user using the lockUser() method.
-            System.out.println("This account has been locked. Please contact the system administrator to unlock your account.");
+            // Add implementation in Server.java to lock out user using the lockUser()
+            // method.
+            System.out.println(
+                    "This account has been locked. Please contact the system administrator to unlock your account.");
             System.exit(0);
         }
     }
 
     // TODO: fuck that we don't have time
-    // TODO: might want to redesign so that users do not choose the username themselves but are rather assigned some IDs
-    private void register() throws Exception
-    {
+    // TODO: might want to redesign so that users do not choose the username
+    // themselves but are rather assigned some IDs
+    private void register() throws Exception {
         System.out.println("\nREGISTRATION SYSTEM\n\nEnter your first name:");
         // Username input
         tempName = userInput();
@@ -283,16 +321,15 @@ public class Main implements Serializable {
         String pass = takeNewPass();
         System.out.println("\n\nEnter a username you would like to use:");
         tempUsername = userInput();
-        String code = setUpAuthentication();
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
-        Message msg = new Message(tempName, tempSurname, tempUsername, pass, tempMail, code);
-        int status = server.addPatient(msg);
-        if (status == REGISTRATION_SUCCESS) {
+        if(server.strengthCheck(new Message(null, pass))) {
+            String code = setUpAuthentication();
+            Message msg = new Message(tempName, tempSurname, tempUsername, pass, tempMail, code);
+            int status = server.addPatient(msg);
             System.out.println("\n\nWOHOO REGISTRATION SUCCESSFUL!");
             mainScreen();
-        }
-        else {
+        } else {
             System.out.println("\nAn account with those credentials may already exist or your password is too weak.");
             System.out.println("Please ensure your password includes all requirements: ");
             System.out.println("At least 1 lowercase character");
@@ -304,14 +341,14 @@ public class Main implements Serializable {
         }
     }
 
-    public String takeNewPass() throws Exception {    //registration password
+    public String takeNewPass() throws Exception { // registration password
         // Password input
         System.out.println("Enter password: ");
         firstPass = userInput();
         System.out.println("Confirm password: ");
         tempPass = userInput();
 
-        while(!firstPass.equals(tempPass)) {
+        while (!firstPass.equals(tempPass)) {
             System.out.println("\nPasswords do not match\n");
             System.out.println("Enter password: ");
             firstPass = userInput();
@@ -330,10 +367,10 @@ public class Main implements Serializable {
         return new SafeMessage(response, encryptedKey);
     }
 
-    private Message takeCode() throws Exception {   //login auth
+    private Message takeCode() throws Exception { // login auth
         System.out.println("\nPlease enter your 6-digit authentication code:");
-        System.out.println("--> Type 'none' if you don't have one");        // dummy value tbf as it is not checked
-//        System.out.println("Type 'cancel' to go back to the main menu.");
+        System.out.println("--> Type 'none' if you don't have one"); // dummy value tbf as it is not checked
+        // System.out.println("Type 'cancel' to go back to the main menu.");
         String code = userInput();
         msg = new Message(tempUsername, code);
         SafeMessage safeMessage = prepMessage(msg);
@@ -346,41 +383,46 @@ public class Main implements Serializable {
         return response;
     }
 
-    private String setUpAuthentication() throws Exception {   //registration auth
+    private String setUpAuthentication() throws Exception { // registration auth
         System.out.println("\nWould you like to set up Two Factor Authentication? (yes/no)");
         String key = "none";
-        while(true) {
+        while (true) {
             String cmd = userInput();
-            if(cmd.equals("yes")) {
+            if (cmd.equals("yes")) {
                 key = server.secretKeyGen();
                 createQRimage(tempUsername, key);
                 System.out.println("\nPlease scan the picture displayed.");
-                // ------------------------------- FOR WINDOWS -----------------------------------//
-//                 String command = "cmd.exe /c start " + "./" + tempUsername + "_QRcode.png";
+
+                // ------------------------------- FOR WINDOWS
+                // -----------------------------------//
+                String command = "cmd.exe /c start " + "./" + tempUsername + "_QRcode.png";
                 // ------------------------------- FOR LINUX --------------------------------//
-                String command = "xdg-open " + tempUsername + "_QRcode.png";
+                // String command = "xdg-open " + tempUsername + "_QRcode.png";
+
                 Runtime.getRuntime().exec(command);
                 System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);
                 break;
-            } else if(cmd.equals("no")) {
-                System.out.println("Understandable, have a nice day.");     // lol Trump would appreciate
+            } else if (cmd.equals("no")) {
+                System.out.println("Understandable, have a nice day."); // lol Trump would appreciate
                 break;
             }
-//            System.out.println("Please enter 'yes' or 'no'");
+            // System.out.println("Please enter 'yes' or 'no'");
         }
-        // Runtime.getRuntime().exec("cmd /c start del /S *.png");  //will delete all .png files in current dir (will implement later on)
+        // Runtime.getRuntime().exec("cmd /c start del /S *.png"); //will delete all
+        // .png files in current dir (will implement later on)
         return key;
     }
 
     public void createQRimage(String username, String code) throws Exception {
-        String content = "otpauth://totp/MedicalPortal: " + username + "?secret=" + code + "&algorithm=SHA1&digits=6&period=30";
+        String content = "otpauth://totp/MedicalPortal: " + username + "?secret=" + code
+                + "&algorithm=SHA1&digits=6&period=30";
         BitMatrix matrix = new QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, 200, 200);
         Path path = FileSystems.getDefault().getPath("./" + username + "_QRcode.png");
         MatrixToImageWriter.writeToPath(matrix, "PNG", path);
     }
 
     public String signChallenge(String challenge) throws Exception {
-//        System.out.println(tempName);
+        // System.out.println(tempName);
         PrivateKey privKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempUsername);
         String signed = SignUtil.signChallenge(challenge, privKey);
         return signed;
