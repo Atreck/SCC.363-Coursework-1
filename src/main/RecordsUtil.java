@@ -41,6 +41,8 @@ public class RecordsUtil {
     private static final long CAN_WRITE_USERS = 14;
     private static final long CAN_CREATE_GROUPS = 15;
     private static final long CAN_DEL_GROUPS = 16;
+    private static final long CAN_READ_GROUPS = 17;
+    private static final long CAN_WRITE_GROUPS = 18;
 
 
     // ------------------ TIMEOUT ------------------//
@@ -58,6 +60,12 @@ public class RecordsUtil {
     public static boolean hasReadUsersPerm(String username) throws IOException, ParseException {
         Context context = getContext(username);
         if (context.getPermissions().contains(CAN_READ_USERS)) return true;
+        return false;
+    }
+
+    public static boolean hasReadGroupsPerm(String username) throws IOException, ParseException {
+        Context context = getContext(username);
+        if (context.getPermissions().contains(CAN_READ_GROUPS)) return true;
         return false;
     }
 
@@ -120,6 +128,25 @@ public class RecordsUtil {
         return users;
     }
 
+    public static HashSet<Long> readGroupPerms(String group) throws IOException, ParseException {
+        Object obj = new JSONParser().parse(new FileReader(prefix+"/Users/permissions.json"));
+        JSONObject jo = (JSONObject) obj;
+
+        JSONArray ja = (JSONArray) jo.get(group);
+
+        HashSet<Long> permissions = new HashSet<>();
+        // iterating through permissions
+        Iterator itr2 = ja.iterator();
+        while (itr2.hasNext())
+        {
+            long permission = (long) itr2.next();
+            permissions.add(permission);
+//            System.out.println(permission);
+        }
+
+        return permissions;
+    }
+
     private static String getGroup(String username) throws IOException, ParseException {
         Object obj1 = new JSONParser().parse(new FileReader(prefix +"/Users/users.json"));
         JSONObject jo1 = (JSONObject) obj1;
@@ -165,15 +192,7 @@ public class RecordsUtil {
         long locked = (long) jo2.get("locked");
 
         System.out.println("HERE1");
-        HashSet<Long> permissions = new HashSet<>();
-        // iterating through permissions
-        Iterator itr2 = ja.iterator();
-        while (itr2.hasNext())
-        {
-            long permission = (long) itr2.next();
-            permissions.add(permission);
-//            System.out.println(permission);
-        }
+        HashSet<Long> permissions = readGroupPerms(group);
         return new Context(group, active, locked, permissions);
     }
 

@@ -15,6 +15,7 @@ import javax.crypto.SealedObject;
 import javax.crypto.SecretKey;
 
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.GUIRunner;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
@@ -135,7 +136,8 @@ public class Main implements Serializable {
         if (action.matches(ALL_USERS)) {
             getUsers(username);
         } else if (action.matches(GET_PERMS)) {
-            ;
+            String group = action.split(" ")[1];
+            getGroupPerms(username, group);
         } else if (action.matches(SET_PERMS)) {
             ;
         } else if (action.matches(ASSIGN_TO_GROUP)) {
@@ -163,6 +165,30 @@ public class Main implements Serializable {
             System.out.println("\nREGISTERED USERS:\n");
             for (Map.Entry<String,String> entry : response.getUsers().entrySet()) {
                 System.out.println("Username: " + entry.getKey() + "   Group: " + entry.getValue());
+            }
+            System.out.println("");
+        } else if (response.getStatus() == INACTIVE_TIMEOUT) {
+            System.out.println("Automatic logout after an inactive period:\n");
+            exit();
+        } else if (response.getStatus() == AUTH_REQUIRED) {
+            System.out.println("You are not logged in!");
+            exit();
+        }
+    }
+
+    public void getGroupPerms(String issuer, String group) throws Exception {
+        Message msg = new Message(issuer, group);
+        SafeMessage safeMessage = prepMessage(msg);
+        SafeMessage sealedResponse = server.getGroupPerms(safeMessage);
+
+        Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
+        if (response.getStatus() == FORBIDDEN) {
+            System.out.println("Sorry you might not have permissions to perform this action.");
+        } else if (response.getStatus() == OK) {
+            // group field may be used to carry records as well as it is all strings
+            System.out.println("\nPERMISSIONS FOR GROUP:" + group + "\n");
+            for (Long entry : response.getPermissions()) {
+                System.out.print(entry + "  ");
             }
             System.out.println("");
         } else if (response.getStatus() == INACTIVE_TIMEOUT) {

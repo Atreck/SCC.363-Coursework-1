@@ -2,6 +2,7 @@ package main;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 public class Message implements Serializable {
@@ -19,6 +20,7 @@ public class Message implements Serializable {
     private String email;
     private String code;
     private String records;
+    private HashSet<Long> permissions;
     private String group;
     private boolean valid;
     private Main client;
@@ -44,6 +46,11 @@ public class Message implements Serializable {
     public Message(int status, Map<String, String> users) {
         this.status = status;
         this.users = users;
+    }
+
+    public Message(int status, HashSet<Long> permissions) {
+        this.status = status;
+        this.permissions = permissions;
     }
 
     public Message(String username, String password, Main client) {
@@ -132,5 +139,9 @@ public class Message implements Serializable {
 
     public Map<String, String> getUsers() {
         return users;
+    }
+
+    public HashSet<Long> getPermissions() {
+        return permissions;
     }
 }

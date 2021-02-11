@@ -425,6 +425,30 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     }
 
 
+    public SafeMessage getGroupPerms(SafeMessage safeMessage) throws Exception {
+        Message data = CryptUtil.decryptSafeMessage("server", safeMessage);
+
+        String issuer = data.getUsername();
+        String group = data.getPassword(); // can be used to carry the wanted group
+
+        int inactiveOrAnauth = checkTimeoutAndActive(issuer);
+
+        if (inactiveOrAnauth != 0) {
+            Message msg1 = new Message(inactiveOrAnauth);
+            return prepResponse(msg1, issuer);
+        }
+
+        HashSet<Long> permissions = new HashSet<>();
+        boolean status = false;
+        Message message = new Message(FORBIDDEN, permissions);
+        status = RecordsUtil.hasReadGroupsPerm(issuer);
+        if (status) {
+            permissions = RecordsUtil.readGroupPerms(group);
+            message = new Message(OK, permissions);
+        }
+
+        return prepResponse(message, issuer);
+    }
 
     public void lockUser(String user) throws Exception {
         // Okay this is just so beautiful, can we leave it like that please hahahah ~
