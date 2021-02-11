@@ -12,8 +12,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 
 public class RecordsUtil {
 
@@ -24,18 +26,21 @@ public class RecordsUtil {
     private static final int CODE_INCORRECT = 4;
     private static final int CODE_CORRECT = 5;
 
-    private static final int CAN_REGISTER_ACCOUNTS = 1;
-    private static final int CAN_DELETE_ACCOUNTS = 2;
-    private static final int CAN_ASSIGN_PERMS = 3;
-    private static final int CAN_REVOKE_PERMS = 4;
-    private static final int CAN_READ_PATIENTS = 5;
-    private static final int CAN_WRITE_PATIENTS = 6;
-    private static final int CAN_UPDATE_PATIENTS_CONTACT = 7;
-    private static final int CAN_REGISTER_PATIENTS = 8;
-    private static final int CAN_CHANGE_USER_PASS = 9;
-    private static final int CAN_READ_OWN_RECORD = 10;
-    private static final int CAN_UPDATE_OWN_CONTACT = 11;
-    private static final int CAN_READ_LOGS = 12;
+    private static final long CAN_REGISTER_ACCOUNTS = 1;
+    private static final long CAN_DELETE_ACCOUNTS = 2;
+    private static final long CAN_ASSIGN_PERMS = 3;
+    private static final long CAN_REVOKE_PERMS = 4;
+    private static final long CAN_READ_PATIENTS = 5;
+    private static final long CAN_WRITE_PATIENTS = 6;
+    private static final long CAN_UPDATE_PATIENTS_CONTACT = 7;
+    private static final long CAN_REGISTER_PATIENTS = 8;
+    private static final long CAN_CHANGE_USER_PASS = 9;
+    private static final long CAN_UPDATE_OWN_CONTACT = 11;
+    private static final long CAN_READ_LOGS = 12;
+    private static final long CAN_READ_USERS = 13;
+    private static final long CAN_WRITE_USERS = 14;
+    private static final long CAN_CREATE_GROUPS = 15;
+    private static final long CAN_DEL_GROUPS = 16;
 
 
     // ------------------ TIMEOUT ------------------//
@@ -49,6 +54,18 @@ public class RecordsUtil {
     // --------------- INTELLIJ PATH PREFIX ----------//
 //    private static String prefix = "src";
 
+
+    public static boolean hasReadUsersPerm(String username) throws IOException, ParseException {
+        Context context = getContext(username);
+        if (context.getPermissions().contains(CAN_READ_USERS)) return true;
+        return false;
+    }
+
+    public static boolean hasWriteUsersPerm(String username) throws IOException, ParseException {
+        Context context = getContext(username);
+        if (context.getPermissions().contains(CAN_WRITE_USERS)) return true;
+        return false;
+    }
 
     public static boolean hasReadPatientsPermission(String username) throws IOException, ParseException {
         Context context = getContext(username);
@@ -85,6 +102,22 @@ public class RecordsUtil {
 
         jo.put("last_active", System.currentTimeMillis());
         updateUserJobj(username, group, jo);
+    }
+
+    public static Map<String, String> readUsers() throws IOException, ParseException {
+        Object obj1 = new JSONParser().parse(new FileReader(prefix +"/Users/users.json"));
+        JSONObject jo = (JSONObject) obj1;
+        Map<String, String> users = new HashMap<>();
+
+        JSONArray usernames = (JSONArray) jo.get("usernames");
+        Iterator iter = usernames.iterator();
+
+        while (iter.hasNext()) {
+            String username = (String) iter.next();
+            users.put(username, (String) jo.get(username));
+        }
+
+        return users;
     }
 
     private static String getGroup(String username) throws IOException, ParseException {
@@ -139,6 +172,7 @@ public class RecordsUtil {
         {
             long permission = (long) itr2.next();
             permissions.add(permission);
+//            System.out.println(permission);
         }
         return new Context(group, active, locked, permissions);
     }
@@ -188,9 +222,9 @@ public class RecordsUtil {
 
         // typecasting obj to JSONObject
         JSONObject jo = (JSONObject) obj;
+        JSONArray users = (JSONArray) jo.get("usernames");
 
-        String user = (String) jo.get(username);
-        if (user != null) return true;
+        if (users.contains(username)) return true;
         return false;
     }
 
@@ -305,6 +339,9 @@ public class RecordsUtil {
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj;
         PrintWriter pw2 = new PrintWriter(prefix+"/Users/users.json");
+        JSONArray users = (JSONArray) jo2.get("usernames");
+        users.add(username);
+        jo2.put("usernames", users);
         jo2.put(username, "Patients");
         pw2.write(jo2.toJSONString());
         pw2.flush();
@@ -344,6 +381,10 @@ public class RecordsUtil {
         JSONObject jo2 = (JSONObject) obj;
         PrintWriter pw2 = new PrintWriter(prefix+"/Users/users.json");
         jo2.put(username, "Admins");
+        JSONArray users = (JSONArray) jo2.get("usernames");
+        users.add(username);
+        jo2.put("usernames", users);
+        jo2.put(username, "Patients");
         pw2.write(jo2.toJSONString());
         pw2.flush();
         pw2.close();
@@ -384,7 +425,15 @@ public class RecordsUtil {
         //----------------------------------------------------------------------------------//
         //--------------------------- Read from JSON ---------------------------------------//
         // parsing file "JSONExample.json"
-//        Object obj = new JSONParser().parse(new FileReader("src/Users/Patients/JohnDoe.json"));
+//        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
+//
+//        JSONObject ja = (JSONObject) obj;
+//
+//        Iterator iter = ja.iterator();
+//
+//        while(iter.hasNext()) {
+//            System.out.println(iter.next());
+//        }
 //
 //        // typecasting obj to JSONObject
 //        JSONObject jo = (JSONObject) obj;
@@ -402,12 +451,5 @@ public class RecordsUtil {
 //        pw.close();
 //
 //        System.out.println((String) jo.get("firstName"));
-
-        // For simplicity
-//        int uniqueID = Math.abs("kacha546".hashCode());
-//        String id = String.valueOf(uniqueID);
-//        String fullId = ADMIN_PREFIX + id;
-//        fullId = fullId.substring(3);
-//        System.out.print(fullId);
     }
 }

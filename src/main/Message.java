@@ -1,6 +1,8 @@
 package main;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Message implements Serializable {
 
@@ -21,6 +23,7 @@ public class Message implements Serializable {
     private boolean valid;
     private Main client;
     private int status;
+    private Map<String, String> users;
 
     /**
      * Constructs a client request containing a client's (prospect)
@@ -32,6 +35,15 @@ public class Message implements Serializable {
     public Message(String username, String password) {
         this.username = username;
         this.password = password;
+    }
+
+    public Message(String username) {
+        this.username = username;
+    }
+
+    public Message(int status, Map<String, String> users) {
+        this.status = status;
+        this.users = users;
     }
 
     public Message(String username, String password, Main client) {
@@ -112,5 +124,13 @@ public class Message implements Serializable {
 
     public String getGroup() {
         return group;
+    }
+
+    public String getRecords() {
+        return records;
+    }
+
+    public Map<String, String> getUsers() {
+        return users;
     }
 }

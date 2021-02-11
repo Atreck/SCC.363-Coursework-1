@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.rmi.Naming;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -145,13 +146,32 @@ public class Main implements Serializable {
             ;
         } else if (action.matches(LOGOUT)) {
             logout();
-        } else {
-            menuScreenAdmin(username);
         }
+        menuScreenAdmin(username);
     }
 
-    public void getUsers(String issuer) {
-        ;
+    public void getUsers(String issuer) throws Exception {
+        Message msg = new Message(issuer);
+        SafeMessage safeMessage = prepMessage(msg);
+        SafeMessage sealedResponse = server.getUsers(safeMessage);
+
+        Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
+        if (response.getStatus() == FORBIDDEN) {
+            System.out.println("Sorry you might not have permissions to perform this action.");
+        } else if (response.getStatus() == OK) {
+            // group field may be used to carry records as well as it is all strings
+            System.out.println("\nREGISTERED USERS:\n");
+            for (Map.Entry<String,String> entry : response.getUsers().entrySet()) {
+                System.out.println("Username: " + entry.getKey() + "   Group: " + entry.getValue());
+            }
+            System.out.println("");
+        } else if (response.getStatus() == INACTIVE_TIMEOUT) {
+            System.out.println("Automatic logout after an inactive period:\n");
+            exit();
+        } else if (response.getStatus() == AUTH_REQUIRED) {
+            System.out.println("You are not logged in!");
+            exit();
+        }
     }
 
     public void menuScreenStaff(String username) {
@@ -274,7 +294,7 @@ public class Main implements Serializable {
             if (status == CODE_CORRECT) {
                 System.out.print("\n\nWELCOME BACK " + tempUsername);
                 // helper
-                // System.out.print("Your group: " + response.getGroup());
+                 System.out.print("Your group: " + response.getGroup());
                 switch (response.getGroup()) {
                     case "Patients":
                         menuScreenPatient(tempUsername);
@@ -298,8 +318,6 @@ public class Main implements Serializable {
 
     private void checkLocked(int status) {
         if (status == LOCKED) {
-            // Add implementation in Server.java to lock out user using the lockUser()
-            // method.
             System.out.println(
                     "This account has been locked. Please contact the system administrator to unlock your account.");
             System.exit(0);
@@ -322,6 +340,7 @@ public class Main implements Serializable {
         tempUsername = userInput();
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
+        // SHOULDN'T BE HERE NOT ON THE CLIENT SIDE!!!!! SHOULD PART OF THE ADD PATIENT!!!! UP!!!!
         if(server.strengthCheck(new Message(null, pass))) {
             String code = setUpAuthentication();
             Message msg = new Message(tempName, tempSurname, tempUsername, pass, tempMail, code);
