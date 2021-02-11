@@ -284,6 +284,7 @@ public class RecordsUtil {
         jo.put("tries", 3);
         jo.put("active", 0);
         jo.put("last_active", 0);
+        jo.put("locked", 0);
 
         PrintWriter pw = new PrintWriter(String.format("./Users/Patients/%s.json", username));
         pw.write(jo.toJSONString());
