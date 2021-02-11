@@ -87,7 +87,7 @@ public class Main implements Serializable {
             System.out.println("Sorry you might not have permissions to perform this action.");
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
-            System.out.println("Your medical history:\n" + response.getGroup());
+            System.out.println("\\nYour medical history:\n" + response.getGroup());
         } else if (response.getStatus() == INACTIVE_TIMEOUT) {
             System.out.println("Automatic logout after an inactive period:\n");
             exit();
@@ -231,8 +231,7 @@ public class Main implements Serializable {
      * code to authenticate a party requesting access. Sends requested credentials
      * to the server for authentication/ verification reasons. Upon successful
      * authentication/ verification obtains the records of the party requesting
-     * access. TODO: Add something so that a user can go back to the main menu -->
-     * no for now
+     * access.
      * 
      * @throws Exception
      */

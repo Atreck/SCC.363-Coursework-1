@@ -31,6 +31,11 @@ public class CryptUtil {
     public static final String ALGO_TYPE = "SHA256WithRSA";
     public static final String ALGO_NAME = "RSA";
 
+    // --------------- VS CODE PATH PREFIX ------------//
+    private static String prefix = ".";
+    // --------------- INTELLIJ PATH PREFIX ----------//
+//    private static String prefix = "src";
+
     /**
      * A method enabling the storage of keys in files.
      *
@@ -101,10 +106,7 @@ public class CryptUtil {
     public static PrivateKey getPrivateKey(String algo, String username)
             throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
-        // -------------------- FOR VS CODE ---------------------------------
-        String path = String.format(System.getProperty("user.dir") + "/Keys/%s/PrivateKey", username);
-        // -------------------- FOR INTELLIJ --------------------------------
-//         String path = String.format("src/Keys/%s/PrivateKey", username);
+         String path = String.format(prefix+"/Keys/%s/PrivateKey", username);
         FileInputStream fis = new FileInputStream(path);
         byte[] privateKey = fis.readAllBytes();
 
@@ -127,11 +129,7 @@ public class CryptUtil {
     public static PublicKey getPublicKey(String algo, String username) throws NoSuchAlgorithmException,
             InvalidKeySpecException, IOException {
 
-        // -------------------- FOR VS CODE ---------------------------------
-       String path = String.format(System.getProperty("user.dir") + "/Keys/%s/PublicKey", username);
-       
-        // -------------------- FOR INTELLIJ --------------------------------
-//         String path = String.format("src/Keys/%s/PublicKey", username);
+         String path = String.format(prefix+"/Keys/%s/PublicKey", username);
 
         FileInputStream fis = new FileInputStream(path);
         byte[] pubKey = fis.readAllBytes();
