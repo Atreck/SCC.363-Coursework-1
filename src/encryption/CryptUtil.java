@@ -102,9 +102,9 @@ public class CryptUtil {
             throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
         // -------------------- FOR VS CODE ---------------------------------
-        String path = String.format(System.getProperty("user.dir") + "/Keys/%s/PrivateKey", username);
+//        String path = String.format(System.getProperty("user.dir") + "/Keys/%s/PrivateKey", username);
         // -------------------- FOR INTELLIJ --------------------------------
-        // String path = String.format("src/Keys/%s/PrivateKey", username);
+         String path = String.format("src/Keys/%s/PrivateKey", username);
         FileInputStream fis = new FileInputStream(path);
         byte[] privateKey = fis.readAllBytes();
 
@@ -128,10 +128,10 @@ public class CryptUtil {
             InvalidKeySpecException, IOException {
 
         // -------------------- FOR VS CODE ---------------------------------
-       String path = String.format(System.getProperty("user.dir") + "/Keys/%s/PublicKey", username);
+//       String path = String.format(System.getProperty("user.dir") + "/Keys/%s/PublicKey", username);
        
         // -------------------- FOR INTELLIJ --------------------------------
-        // String path = String.format("src/Keys/%s/PublicKey", username);
+         String path = String.format("src/Keys/%s/PublicKey", username);
 
         FileInputStream fis = new FileInputStream(path);
         byte[] pubKey = fis.readAllBytes();

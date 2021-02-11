@@ -83,6 +83,7 @@ public class RecordsUtil {
     }
 
     private static String getGroup(String username) throws IOException, ParseException {
+//        Object obj1 = new JSONParser().parse(new FileReader("src/Users/users.json"));
         Object obj1 = new JSONParser().parse(new FileReader("./Users/users.json"));
         JSONObject jo1 = (JSONObject) obj1;
         // check to which group the user belongs to
@@ -92,7 +93,12 @@ public class RecordsUtil {
     }
 
     private static JSONObject getUserJObj(String username, String group) throws IOException, ParseException {
-        Object obj2 = new JSONParser().parse(new FileReader(String.format("./Users/%s/%s.json", group, username)));
+        // -------------------- FOR VSCODE --------------------------------//
+        String path = String.format("./Users/%s/%s.json", group, username);
+        // -------------------- FOR INTELLIJ ------------------------------//
+//        String path = String.format("src/Users/%s/%s.json", group, username);
+
+        Object obj2 = new JSONParser().parse(new FileReader(path));
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj2;
 
@@ -100,7 +106,12 @@ public class RecordsUtil {
     }
 
     private static void updateUserJobj(String username, String group, JSONObject obj) throws FileNotFoundException {
-        PrintWriter pw = new PrintWriter(String.format("./Users/%s/%s.json", group, username));
+        // -------------------- FOR VSCODE --------------------------------//
+        String path = String.format("./Users/%s/%s.json", group, username);
+        // -------------------- FOR INTELLIJ ------------------------------//
+//        String path = String.format("src/Users/%s/%s.json", group, username);
+
+        PrintWriter pw = new PrintWriter(path);
         pw.write(obj.toJSONString());
 
         pw.flush();
@@ -112,6 +123,7 @@ public class RecordsUtil {
         String group = getGroup(username);
 
         // now check permissions associated with that group
+//        Object obj = new JSONParser().parse(new FileReader("src/Users/permissions.json"));
         Object obj = new JSONParser().parse(new FileReader("./Users/permissions.json"));
         JSONObject jo = (JSONObject) obj;
 
@@ -175,6 +187,7 @@ public class RecordsUtil {
     }
 
     public static boolean userExists(String username) throws IOException, ParseException {
+//        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
         Object obj = new JSONParser().parse(new FileReader("./Users/users.json"));
 
         // typecasting obj to JSONObject
@@ -287,15 +300,18 @@ public class RecordsUtil {
         jo.put("locked", 0);
 
         PrintWriter pw = new PrintWriter(String.format("./Users/Patients/%s.json", username));
+//        PrintWriter pw = new PrintWriter(String.format("src/Users/Patients/%s.json", username));
         pw.write(jo.toJSONString());
         pw.flush();
         pw.close();
 
         // add to user -> group mapping file
         Object obj = new JSONParser().parse(new FileReader("./Users/users.json"));
+//        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj;
         PrintWriter pw2 = new PrintWriter("./Users/users.json");
+//        PrintWriter pw2 = new PrintWriter("src/Users/users.json");
         jo2.put(username, "Patients");
         pw2.write(jo2.toJSONString());
         pw2.flush();
@@ -325,15 +341,18 @@ public class RecordsUtil {
         jo.put("locked", 0);
 
         PrintWriter pw = new PrintWriter(String.format("./Users/Admins/%s.json", username));
+//        PrintWriter pw = new PrintWriter(String.format("src/Users/Admins/%s.json", username));
         pw.write(jo.toJSONString());
         pw.flush();
         pw.close();
 
         // add to user -> group mapping file
         Object obj = new JSONParser().parse(new FileReader("./Users/users.json"));
+//        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj;
         PrintWriter pw2 = new PrintWriter("./Users/users.json");
+//        PrintWriter pw2 = new PrintWriter("src/Users/users.json");
         jo2.put(username, "Admins");
         pw2.write(jo2.toJSONString());
         pw2.flush();
