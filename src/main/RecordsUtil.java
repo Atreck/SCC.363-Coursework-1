@@ -156,7 +156,7 @@ public class RecordsUtil {
 
     }
 
-    private static String getGroup(String username) throws IOException, ParseException {
+    public static String getGroup(String username) throws IOException, ParseException {
         Object obj1 = new JSONParser().parse(new FileReader(prefix +"/Users/users.json"));
         JSONObject jo1 = (JSONObject) obj1;
         // check to which group the user belongs to

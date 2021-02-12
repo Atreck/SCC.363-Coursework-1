@@ -1,9 +1,11 @@
 package main;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.rmi.Naming;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -16,6 +18,11 @@ import java.util.logging.SimpleFormatter;
 import java.text.SimpleDateFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.FileUtils;
+import org.json.simple.*;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import javax.crypto.SealedObject;
 import javax.crypto.SecretKey;
@@ -75,7 +82,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         SimpleFormatter formatter = new SimpleFormatter();  
         handler.setFormatter(formatter);
 
-//        addPatient(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
+       addPatient1(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
     public SafeMessage authenticateUser(SafeMessage safeMessage) throws Exception {
@@ -211,6 +218,23 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         }
 
         return prepResponse(msg, username);
+    }
+
+    public boolean delUser(String user, String issuer, String reason) throws Exception {
+        logger.info("ACCOUNT DELETION INITIATION : " + user + " BY : " + issuer + " REASON : " + reason);
+        // if(System.getProperty("os.name").toLowerCase().contains("windows")) {
+        try {
+            FileUtils.deleteDirectory(new File("./Keys/" + user));
+        } catch (Exception e) {
+            logger.warning("KEY DELETION UNSUCCESSFUL : " + user);
+        }
+
+        if(!new File("./Users/" + RecordsUtil.getGroup(user) + "/" + user + ".json").delete()) {
+            logger.warning("User record couldn't be deleted for : " + user + " by : " + issuer);
+            return false;
+        }
+        logger.info("ACCOUNT DELETION SUCCESSFUL : " + user + " BY : " + issuer + " REASON : " + reason);
+        return true;
     }
 
     public int addPatient1(Message message) throws Exception {

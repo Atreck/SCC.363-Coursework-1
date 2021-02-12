@@ -2,21 +2,30 @@
 A third year Computer Science coursework to implement varying degrees of security and functionality to a registration/login system in a medical environment.
 
 ## Usage
-To use in its current state, you must have 3 terminals open (2 if using included shell script)
+To operate the system, a Windows 10 machine running JDK 13.0 is recommended.
+
+### Automated
+To automatically run the system, try and run the "run.bat" file from the main directory. 3 windows will pop up. If the login screen does not appear after 5 seconds (delay was added to ensure proper runtime), close all the terminal and try again.
+
+### Manual
+For manual compilation and running, you must have 3 terminals open (2 if using included shell script). All of them must either be opened in the src/ folder or by typing ```cd ./src/``` in the terminal. 
 
 Console 1:
-- Type ```rmiregistry``` or start the shell script.
+- Compile and run the registry or start the shell script.
+```java
+javac -cp "./lib/*;." main/*.java ;& rmiregistry
+``` 
 
 Console 2:
 - Compile and run the server (commands vary depending on OS and version) this is for Java 13.0.1 on Windows 10
 ```java
-javac -cp "src/lib/*;." src/*.java;&java -cp "src/lib/*;." src.Server
+java -cp "./lib/*;." main/Server
 ```
 
 Console 3:
 - Compile and run the frontend
 ```java
-javac -cp "src/lib/*;." src/*.java;&java -cp "src/lib/*;." src.Main
+java -cp "./lib/*;." main/Main
 ```
 
 ## Two-Factor Authentication Testing
