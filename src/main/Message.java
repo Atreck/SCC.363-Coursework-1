@@ -16,6 +16,7 @@ public class Message implements Serializable {
     private String username;
     private String password;
     private String name;
+    private String issuer;
     private String surname;
     private String email;
     private String code;
@@ -53,6 +54,12 @@ public class Message implements Serializable {
         this.permissions = permissions;
     }
 
+    public Message(String username, String group, HashSet<Long> permissions) {
+        this.username = username;
+        this.group = group;
+        this.permissions = permissions;
+    }
+
     public Message(String username, String password, Main client) {
         this.username = username;
         this.password = password;
@@ -71,6 +78,18 @@ public class Message implements Serializable {
         this.username = username;
         this.password = password;
         this.email = email;
+        this.code = code;
+    }
+
+    public Message(String issuer, String name, String surname,
+                   String username, String password, String group, String code) {
+
+        this.issuer = issuer;
+        this.name = name;
+        this.surname = surname;
+        this.username = username;
+        this.password = password;
+        this.group = group;
         this.code = code;
     }
 
@@ -143,5 +162,9 @@ public class Message implements Serializable {
 
     public HashSet<Long> getPermissions() {
         return permissions;
+    }
+
+    public String getIssuer() {
+        return issuer;
     }
 }

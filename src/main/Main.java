@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.rmi.Naming;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
@@ -51,7 +52,7 @@ public class Main implements Serializable {
     private final String ALL_USERS = "all_users";
     private final String GET_PERMS = "get_perms\\s\\w+";
     private final String SET_PERMS = "set_perms\\s\\w+";
-    private final String ASSIGN_TO_GROUP = "assign\\s\\w+";
+    private final String ASSIGN_TO_GROUP = "assign\\s\\w+\\s\\w+";
     private final String ADD_USER = "add_user";
     private final String DEL_USER = "del_user\\s\\w+";
 
@@ -139,17 +140,59 @@ public class Main implements Serializable {
             String group = action.split(" ")[1];
             getGroupPerms(username, group);
         } else if (action.matches(SET_PERMS)) {
-            ;
+            String group = action.split(" ")[1];
+            System.out.println("\nPlease enter new permissions separated by space:");
+            String input = userInput();
+            String[] permissions = input.split(" ");
+            assignGroupPerms(username, group, permissions);
         } else if (action.matches(ASSIGN_TO_GROUP)) {
-            ;
+            String[] input = action.split(" ");
+            String assignee = input[1];
+            String group = input[2];
+            assignToGroup(username, assignee, group);
         } else if (action.matches(ADD_USER)) {
-            ;
+            addUser(username);
         } else if (action.matches(DEL_USER)) {
             ;
         } else if (action.matches(LOGOUT)) {
             logout();
         }
         menuScreenAdmin(username);
+    }
+
+    public void addUser(String issuer) throws Exception {
+        System.out.println("\nADD USER FORM\n");
+        System.out.print("User's name");
+        String name = userInput();
+        System.out.print("User's surname");
+        String surname = userInput();
+        System.out.print("User's username");
+        String username = userInput();
+        System.out.print("User's group");
+        String group = userInput();
+        System.out.print("User's pass");
+        String pass = userInput();
+        String keycode = setUpAuthentication();
+
+        System.out.println(group);
+        Message msg = new Message(issuer, name, surname, username, pass, group, keycode);
+
+        SafeMessage safeMessage = prepMessage(msg);
+        SafeMessage sealedResponse = server.addUser(safeMessage);
+
+        Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
+        if (response.getStatus() == FORBIDDEN) {
+            System.out.println("Sorry you might not have permissions to perform this action.");
+        } else if (response.getStatus() == OK) {
+            // group field may be used to carry records as well as it is all strings
+            System.out.println("\nREGISTERED USER: " + username + "\n");
+        } else if (response.getStatus() == INACTIVE_TIMEOUT) {
+            System.out.println("Automatic logout after an inactive period:\n");
+            exit();
+        } else if (response.getStatus() == AUTH_REQUIRED) {
+            System.out.println("You are not logged in!");
+            exit();
+        }
     }
 
     public void getUsers(String issuer) throws Exception {
@@ -191,6 +234,51 @@ public class Main implements Serializable {
                 System.out.print(entry + "  ");
             }
             System.out.println("");
+        } else if (response.getStatus() == INACTIVE_TIMEOUT) {
+            System.out.println("Automatic logout after an inactive period:\n");
+            exit();
+        } else if (response.getStatus() == AUTH_REQUIRED) {
+            System.out.println("You are not logged in!");
+            exit();
+        }
+    }
+
+    public void assignGroupPerms(String issuer, String group, String[] permissions) throws Exception {
+        HashSet<Long> newPermissions = new HashSet<>();
+        for (String s: permissions) {
+            newPermissions.add(Long.parseLong(s));
+        }
+
+        Message msg = new Message(issuer, group, newPermissions);
+        SafeMessage safeMessage = prepMessage(msg);
+        SafeMessage sealedResponse = server.setGroupPerms(safeMessage);
+
+        Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
+        if (response.getStatus() == FORBIDDEN) {
+            System.out.println("Sorry you might not have permissions to perform this action.");
+        } else if (response.getStatus() == OK) {
+            // group field may be used to carry records as well as it is all strings
+            System.out.println("\nNEW PERMISSIONS SET FOR GROUP:" + group + "\n");
+        } else if (response.getStatus() == INACTIVE_TIMEOUT) {
+            System.out.println("Automatic logout after an inactive period:\n");
+            exit();
+        } else if (response.getStatus() == AUTH_REQUIRED) {
+            System.out.println("You are not logged in!");
+            exit();
+        }
+    }
+
+    public void assignToGroup(String issuer, String assignee, String group) throws Exception {
+        Message msg = new Message(issuer, assignee, group);
+        SafeMessage safeMessage = prepMessage(msg);
+        SafeMessage sealedResponse = server.assignToGroup(safeMessage);
+
+        Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
+        if (response.getStatus() == FORBIDDEN) {
+            System.out.println("Sorry you might not have permissions to perform this action.");
+        } else if (response.getStatus() == OK) {
+            // group field may be used to carry records as well as it is all strings
+            System.out.println("\nUSER " + assignee + " NOW ASSIGNED TO GROUP:" + group + "\n");
         } else if (response.getStatus() == INACTIVE_TIMEOUT) {
             System.out.println("Automatic logout after an inactive period:\n");
             exit();

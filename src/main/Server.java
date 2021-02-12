@@ -64,7 +64,9 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         file.getParentFile().mkdirs();
         logger.addHandler(new FileHandler(prefix+"/Logs/" + currentLog, true));
         file.setReadOnly();
-//        addAdmin("admin", "Joe", "Admindoe", "superUser89@pass","BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
+//        RecordsUtil.addUser("Joe", "Admindoe", "admin",
+//                "JDoe@mediservice.com", "superUser89@pass",
+//                "Admins", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
 //        addPatient(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
@@ -214,38 +216,42 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return REGISTRATION_FAIL;
     }
 
-    // public SafeMessage addUser(SafeMessage safeMessage) throws Exception {
-    // Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
-    //
-    // String issuer = message.getUsername();
-    // }
+     public SafeMessage addUser(SafeMessage safeMessage) throws Exception {
+         Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
 
-    public void addAdmin(String username, String name, String surname, String password, String code) throws Exception {
-        // first letter of a name + surname + @mediservice.com to create staff emails
-        String email = name.substring(0, 1) + surname + "@mediservice.com";
+         String issuer = message.getIssuer();
+         String name = message.getName();
+         String surname = message.getSurname();
+         String username = message.getUsername();
+         String email = name.substring(0, 1) + surname + "@mediservice.com";
+         String pass = message.getPassword();
+         String group = message.getGroup();
+         String code = message.getCode();
 
-        // Commented out as there was a qr image already created for this one
-        // String key = secretKeyGen();
-        // createQRimage(username, code);
-        boolean passStrong = strengthCheck(password);
+         System.out.println(group);
 
-        if (!passStrong) {
-            System.out.println("** Admin registration failed - pass too weak");
-            logger.warning("Admin pass registration fail : " + username);
-            return;
-        }
+         int inactiveOrAnauth = checkTimeoutAndActive(issuer);
 
-        boolean userExists = RecordsUtil.userExists(username);
-        if (!userExists) {
-            RecordsUtil.addAdmin(username, name, surname, email, password, code);
-            register(username);
-            System.out.println("** Admin registration successful with username: " + username);
-            logger.info("Admin registration : " + username);
-            return;
-        }
-        System.out.println("** Admin registration failed, account with such username may already exist.");
-        logger.warning("Admin registration fail : " + username);
-    }
+         if (inactiveOrAnauth != 0) {
+             Message msg1 = new Message(inactiveOrAnauth);
+             return prepResponse(msg1, issuer);
+         }
+
+         Message msg = new Message(REGISTRATION_FAIL);
+         if (!RecordsUtil.userExists(username)) {
+             boolean status = false;
+             msg = new Message(FORBIDDEN);
+             status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_ACCOUNTS);
+             if (!status) status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_PATIENTS);
+             if (status) {
+                 RecordsUtil.addUser(name, surname, username, email, pass, group, code);
+                 register(username); // this is so that a key pair is generated
+                 msg = new Message(OK);
+             }
+         }
+
+         return prepResponse(msg, issuer);
+     }
 
     public boolean strengthCheck(String input) throws Exception {
         Pattern p = Pattern.compile("[^A-Za-z0-9 ]"); // Find character not in that list
@@ -330,7 +336,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         Map<String, String> users = new HashMap<>();
         boolean status = false;
         Message message = new Message(FORBIDDEN, users);
-        status = RecordsUtil.hasReadUsersPerm(issuer);
+        status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_READ_USERS);
         if (status) {
             users = RecordsUtil.readUsers();
             message = new Message(OK, users);
@@ -367,7 +373,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         // else
         String group = RecordsUtil.getContext(issuer).getGroup();
         if (!issuer.equals(usertosee)) {
-            status = RecordsUtil.hasReadPatientsPermission(issuer);
+            status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_READ_PATIENTS);
             if (status) {
                 records = RecordsUtil.readPatient(usertosee);
                 message = new Message(OK, records);
@@ -409,7 +415,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String group = RecordsUtil.getContext(issuer).getGroup();
         if (!issuer.equals(usertosee)) {
             System.out.println("Update user");
-            status = RecordsUtil.hasUpdatePatientsPermission(issuer);
+            status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_WRITE_PATIENTS);
             if (status) {
                 // here we update records and send back an OK message
                 RecordsUtil.updatePatient(usertosee);
@@ -441,13 +447,67 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         HashSet<Long> permissions = new HashSet<>();
         boolean status = false;
         Message message = new Message(FORBIDDEN, permissions);
-        status = RecordsUtil.hasReadGroupsPerm(issuer);
+        status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_READ_GROUPS);
         if (status) {
             permissions = RecordsUtil.readGroupPerms(group);
             message = new Message(OK, permissions);
         }
 
         return prepResponse(message, issuer);
+    }
+
+    public SafeMessage setGroupPerms(SafeMessage safeMessage) throws Exception {
+        Message data = CryptUtil.decryptSafeMessage("server", safeMessage);
+
+        String issuer = data.getUsername();
+        String group = data.getGroup();
+
+        int inactiveOrAnauth = checkTimeoutAndActive(issuer);
+
+        if (inactiveOrAnauth != 0) {
+            Message msg1 = new Message(inactiveOrAnauth);
+            return prepResponse(msg1, issuer);
+        }
+
+        HashSet<Long> newPermissions = data.getPermissions();
+
+        boolean status = false;
+        Message message = new Message(FORBIDDEN);
+        status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_WRITE_GROUPS);
+        if (status) {
+//            System.out.println("Setting new permissions for: " + group);
+            RecordsUtil.setGroupPerms(newPermissions, group);
+            message = new Message(OK);
+        }
+
+        return prepResponse(message, issuer);
+    }
+
+    public SafeMessage assignToGroup(SafeMessage safeMessage) throws Exception {
+        Message data = CryptUtil.decryptSafeMessage("server", safeMessage);
+
+        String issuer = data.getUsername();
+        String assignee = data.getPassword(); // pass field used to carry assignee name
+        String group = data.getCode(); // code field used to carry group username
+
+        int inactiveOrAnauth = checkTimeoutAndActive(issuer);
+
+        if (inactiveOrAnauth != 0) {
+            Message msg1 = new Message(inactiveOrAnauth);
+            return prepResponse(msg1, issuer);
+        }
+
+        boolean status = false;
+        Message message = new Message(FORBIDDEN);
+        status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_ASSIGN_PERMS);
+        if (status) {
+//            System.out.println("Setting new permissions for: " + group);
+            RecordsUtil.assignToGroup(assignee, group);
+            message = new Message(OK);
+        }
+
+        return prepResponse(message, issuer);
+
     }
 
     public void lockUser(String user) throws Exception {

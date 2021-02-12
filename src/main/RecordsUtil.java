@@ -8,6 +8,7 @@ import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import javax.imageio.IIOException;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -26,23 +27,23 @@ public class RecordsUtil {
     private static final int CODE_INCORRECT = 4;
     private static final int CODE_CORRECT = 5;
 
-    private static final long CAN_REGISTER_ACCOUNTS = 1;
-    private static final long CAN_DELETE_ACCOUNTS = 2;
-    private static final long CAN_ASSIGN_PERMS = 3;
-    private static final long CAN_REVOKE_PERMS = 4;
-    private static final long CAN_READ_PATIENTS = 5;
-    private static final long CAN_WRITE_PATIENTS = 6;
-    private static final long CAN_UPDATE_PATIENTS_CONTACT = 7;
-    private static final long CAN_REGISTER_PATIENTS = 8;
-    private static final long CAN_CHANGE_USER_PASS = 9;
-    private static final long CAN_UPDATE_OWN_CONTACT = 11;
-    private static final long CAN_READ_LOGS = 12;
-    private static final long CAN_READ_USERS = 13;
-    private static final long CAN_WRITE_USERS = 14;
-    private static final long CAN_CREATE_GROUPS = 15;
-    private static final long CAN_DEL_GROUPS = 16;
-    private static final long CAN_READ_GROUPS = 17;
-    private static final long CAN_WRITE_GROUPS = 18;
+    public static final long CAN_REGISTER_ACCOUNTS = 1;
+    public static final long CAN_DELETE_ACCOUNTS = 2;
+    public static final long CAN_ASSIGN_PERMS = 3;
+    public static final long CAN_REVOKE_PERMS = 4;
+    public static final long CAN_READ_PATIENTS = 5;
+    public static final long CAN_WRITE_PATIENTS = 6;
+    public static final long CAN_UPDATE_PATIENTS_CONTACT = 7;
+    public static final long CAN_REGISTER_PATIENTS = 8;
+    public static final long CAN_CHANGE_USER_PASS = 9;
+    public static final long CAN_UPDATE_OWN_CONTACT = 11;
+    public static final long CAN_READ_LOGS = 12;
+    public static final long CAN_READ_USERS = 13;
+    public static final long CAN_WRITE_USERS = 14;
+    public static final long CAN_CREATE_GROUPS = 15;
+    public static final long CAN_DEL_GROUPS = 16;
+    public static final long CAN_READ_GROUPS = 17;
+    public static final long CAN_WRITE_GROUPS = 18;
 
 
     // ------------------ TIMEOUT ------------------//
@@ -56,35 +57,24 @@ public class RecordsUtil {
     // --------------- INTELLIJ PATH PREFIX ----------//
 //    private static String prefix = "src";
 
-
-    public static boolean hasReadUsersPerm(String username) throws IOException, ParseException {
+    public static boolean hasPerms(String username, Long perms) throws IOException, ParseException {
         Context context = getContext(username);
-        if (context.getPermissions().contains(CAN_READ_USERS)) return true;
+        if (context.getPermissions().contains(perms)) return true;
         return false;
     }
 
-    public static boolean hasReadGroupsPerm(String username) throws IOException, ParseException {
-        Context context = getContext(username);
-        if (context.getPermissions().contains(CAN_READ_GROUPS)) return true;
-        return false;
-    }
+    public static void assignToGroup(String assignee, String group) throws IOException, ParseException {
+        String path = prefix +"/Users/users.json";
+        Object obj1 = new JSONParser().parse(new FileReader(path));
+        JSONObject jo1 = (JSONObject) obj1;
 
-    public static boolean hasWriteUsersPerm(String username) throws IOException, ParseException {
-        Context context = getContext(username);
-        if (context.getPermissions().contains(CAN_WRITE_USERS)) return true;
-        return false;
-    }
+        jo1.put(assignee, group);
 
-    public static boolean hasReadPatientsPermission(String username) throws IOException, ParseException {
-        Context context = getContext(username);
-        if (context.getPermissions().contains(CAN_READ_PATIENTS)) return true;
-        return false;
-    }
+        PrintWriter pw = new PrintWriter(path);
+        pw.write(jo1.toJSONString());
 
-    public static boolean hasUpdatePatientsPermission(String username) throws IOException, ParseException {
-        Context context = getContext(username);
-        if (context.getPermissions().contains(CAN_WRITE_PATIENTS)) return true;
-        return false;
+        pw.flush();
+        pw.close();
     }
 
     public static String readPatient(String username) throws IOException, ParseException {
@@ -145,6 +135,25 @@ public class RecordsUtil {
         }
 
         return permissions;
+    }
+
+    public static void setGroupPerms(HashSet<Long> permissions, String group) throws IOException, ParseException {
+        String path = prefix+"/Users/permissions.json";
+        Object obj = new JSONParser().parse(new FileReader(path));
+//        System.out.println("Setting new permissions..");
+        JSONObject jo = (JSONObject) obj;
+
+        JSONArray ja = (JSONArray) jo.get(group);
+        for (Long l: permissions) ja.add(l);
+
+        jo.put(group, ja);
+
+        PrintWriter pw = new PrintWriter(path);
+        pw.write(jo.toJSONString());
+
+        pw.flush();
+        pw.close();
+
     }
 
     private static String getGroup(String username) throws IOException, ParseException {
@@ -367,11 +376,8 @@ public class RecordsUtil {
         pw2.close();
     }
 
-
-    public static void addAdmin(
-            String username, String name, String surname, String email,
-            String password, String code)
-            throws Exception {
+    public static void addUser(String name, String surname, String username, String email,
+                               String password, String group, String code)  throws  Exception {
 
         String salt = CryptUtil.genSalt().toString();
         String saltedPass = CryptUtil.saltPass(password, salt);
@@ -389,7 +395,7 @@ public class RecordsUtil {
         jo.put("last_active", 0);
         jo.put("locked", 0);
 
-        PrintWriter pw = new PrintWriter(String.format(prefix+"/Users/Admins/%s.json", username));
+        PrintWriter pw = new PrintWriter(String.format(prefix+"/Users/%s/%s.json", group, username));
         pw.write(jo.toJSONString());
         pw.flush();
         pw.close();
@@ -399,11 +405,10 @@ public class RecordsUtil {
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj;
         PrintWriter pw2 = new PrintWriter(prefix+"/Users/users.json");
-        jo2.put(username, "Admins");
+        jo2.put(username, group);
         JSONArray users = (JSONArray) jo2.get("usernames");
         users.add(username);
         jo2.put("usernames", users);
-        jo2.put(username, "Patients");
         pw2.write(jo2.toJSONString());
         pw2.flush();
         pw2.close();
