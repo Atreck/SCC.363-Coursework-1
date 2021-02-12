@@ -47,17 +47,17 @@ Alternatively, to use the TOTP codes, follow the instructions:
 
 Log in normally either as an Admin or Patient with the credentials provided above or as someone else with the credentials listed below:
 
-Register as a: ```Doctor```
+Register as a: ```Doctor```<br>
 Username: ```jsmith24```
 Password: ```changemeplease```
 Key: ```none```
 
-Register as a: ```Nurse```
+Register as a: ```Nurse```<br>
 Username: ```katewins678```
-Password: ```carrots%23Apps```
+Password: ```carrots%23Apps```<br>
 Key: ```XUTWHKIO7IDSIP6EW5OTABC2ZM3XERGS```
 
-![katewins678 QR Code](katewins678_QRcode.png)
+![katewins678 QR code](katewins678_QRcode.png)
 
 Follow the on-screen instructions to invoke different actions, such as:
 
