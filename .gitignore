@@ -21,7 +21,7 @@ settings.json
 *.rar
 
 # Code files/security files#
-*.png
+#*.png
 *.jpg
 Logs/
 GUItest.java
