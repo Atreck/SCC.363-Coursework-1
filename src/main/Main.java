@@ -1,5 +1,6 @@
 package main;
 
+import java.io.File;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.FileSystems;
@@ -156,7 +157,13 @@ public class Main implements Serializable {
         } else if (action.matches(ADD_USER)) {
             addUser(username);
         } else if (action.matches(DEL_USER)) {
-            ;
+            String user = action.split(" ") [1];
+            if(RecordsUtil.userExists(user))
+                delUser(user, username);
+            else {
+                System.out.println("User not found.");
+                menuScreenAdmin(username);
+            }
         } else if (action.matches(LOGOUT)) {
             logout();
         }
@@ -195,6 +202,26 @@ public class Main implements Serializable {
         } else if (response.getStatus() == AUTH_REQUIRED) {
             System.out.println("You are not logged in!");
             exit();
+        }
+    }
+
+    public void delUser(String user, String issuer) throws Exception {
+        System.out.println("Are you sure you want to permanently delete the account " + user + "?");
+        System.out.println("Please confirm by either typing CONFIRM or EXIT to return to menu.");
+        String cmd = userInput();
+        System.out.println(cmd);
+        if(cmd.matches("CONFIRM")) {
+            System.out.println("Please state a reason for deletion.");
+            String reason = userInput();
+            if(!server.delUser(user, issuer, reason)) {
+                System.out.println("User deletion has been unsuccessful. Please check logs for more info.");
+            } else {
+                System.out.println("User deletion successful.");
+            }
+        } else if(cmd.matches("EXIT")) {
+            menuScreenAdmin(issuer);
+        } else {
+            delUser(user, issuer);
         }
     }
 
@@ -473,7 +500,6 @@ public class Main implements Serializable {
         tempUsername = userInput();
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
-        // SHOULDN'T BE HERE NOT ON THE CLIENT SIDE!!!!! SHOULD PART OF THE ADD PATIENT!!!! UP!!!!
         if(server.strengthCheck(new Message(null, pass))) {
             String code = setUpAuthentication();
             Message msg = new Message(tempName, tempSurname, tempUsername, pass, tempMail, code);
@@ -506,7 +532,6 @@ public class Main implements Serializable {
         String username = userInput();
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
-        // SHOULDN'T BE HERE NOT ON THE CLIENT SIDE!!!!! SHOULD PART OF THE ADD PATIENT!!!! UP!!!!
         if(server.strengthCheck(new Message(null, pass))) {
             String code = setUpAuthentication();
             Message msg = new Message(issuer, tempName, tempSurname, username, pass, tempMail, code);
@@ -521,7 +546,7 @@ public class Main implements Serializable {
                 // group field may be used to carry records as well as it is all strings
                 System.out.println("\nUSER " + username + " SUCCESSFULLY REGISTERED\n");
             } else if (response.getStatus() == REGISTRATION_FAIL) {
-                System.out.println("\nAn account with those credentials may already exist or password is too weak.");
+                System.out.println("\nYour username may not be one that has been previously registered before or your password is too weak.");
                 System.out.println("Please ensure your password includes all requirements: ");
                 System.out.println("At least 1 lowercase character");
                 System.out.println("At least 1 uppercase character");

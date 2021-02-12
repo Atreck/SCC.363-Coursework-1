@@ -156,7 +156,7 @@ public class RecordsUtil {
 
     }
 
-    private static String getGroup(String username) throws IOException, ParseException {
+    public static String getGroup(String username) throws IOException, ParseException {
         Object obj1 = new JSONParser().parse(new FileReader(prefix +"/Users/users.json"));
         JSONObject jo1 = (JSONObject) obj1;
         // check to which group the user belongs to
@@ -200,7 +200,6 @@ public class RecordsUtil {
         long active = (long) jo2.get("active");
         long locked = (long) jo2.get("locked");
 
-        System.out.println("HERE1");
         HashSet<Long> permissions = readGroupPerms(group);
         return new Context(group, active, locked, permissions);
     }
