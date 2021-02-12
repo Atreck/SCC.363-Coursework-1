@@ -251,7 +251,6 @@ public class RecordsUtil {
 
         // it is possible to check contains
         if (users.contains(username)) return true;
-
         return false;
     }
 

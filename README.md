@@ -62,7 +62,7 @@ Key: ```XUTWHKIO7IDSIP6EW5OTABC2ZM3XERGS```
 Register as a: ```Receptionist```<br>
 Username: ```ahopkins15```<br>
 Password: ```hopDrop%Bom12```<br>
-Key: ```MQ52WMF4JQYV2FSLHB6AVFDDDBQPZVUO```
+Key: ```VHKWHWBOIBUQPSZI2SD7SS2SGBXAXOPI```
 
 ![ahopkins15 QR code](ahopkins15_QRcode.png)
 

@@ -33,6 +33,7 @@ public class Main implements Serializable {
     private String tempUsername;
     private String tempSurname;
     private String tempMail;
+    private String thisgroup;
     private static String tempPass;
     private static String firstPass;
     private int status;
@@ -310,9 +311,9 @@ public class Main implements Serializable {
             registerLogged(username);
         } else if (action.matches(LOGOUT)) {
             logout();
-        } else {
-            menuScreenStaff(username);
         }
+        menuScreenStaff(username);
+
     }
 
     public void menuScreenPatient(String username) throws Exception {
@@ -433,7 +434,8 @@ public class Main implements Serializable {
                     System.out.println("\n\nWELCOME BACK " + tempUsername + "\n");
                     // helper
 //                 System.out.print("Your group: " + response.getGroup());
-                    switch (response.getGroup()) {
+                    thisgroup = response.getGroup();
+                    switch (thisgroup) {
                         case "Patients":
                             menuScreenPatient(tempUsername);
                         case "Admins":
