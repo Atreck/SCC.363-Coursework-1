@@ -1,12 +1,1 @@
-{
-    "authKey":"BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A",
-    "tries":3,
-    "salt":"[B@65e579dc",
-    "surname":"Admindoe",
-    "name":"Joe",
-    "active":1,
-    "passHash":"8d5243c4072355ba4c050780d0a2e8ef",
-    "last_active":1613088551678,
-    "locked":0,
-    "email":"JAdmindoe@mediservice.com"
-}
+{"authKey":"BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A","tries":3,"salt":"[B@65e579dc","surname":"Admindoe","name":"Joe","active":1,"passHash":"8d5243c4072355ba4c050780d0a2e8ef","last_active":1613131382732,"locked":0,"email":"JAdmindoe@mediservice.com"}

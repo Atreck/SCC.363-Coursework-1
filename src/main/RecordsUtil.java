@@ -193,14 +193,11 @@ public class RecordsUtil {
         Object obj = new JSONParser().parse(new FileReader(prefix+"/Users/permissions.json"));
         JSONObject jo = (JSONObject) obj;
 
-        JSONArray ja = (JSONArray) jo.get(group);
-
         // typecasting obj to JSONObject
         JSONObject jo2 = getUserJObj(username, group);
         long active = (long) jo2.get("active");
         long locked = (long) jo2.get("locked");
 
-        System.out.println("HERE1");
         HashSet<Long> permissions = readGroupPerms(group);
         return new Context(group, active, locked, permissions);
     }

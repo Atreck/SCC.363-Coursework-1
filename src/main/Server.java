@@ -1,6 +1,7 @@
 package main;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.rmi.Naming;
@@ -86,25 +87,30 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             String username = data.getUsername();
             String pass = data.getPassword();
 
+            Message msg = new Message(CREDENTIALS_BAD);
+
+            System.out.println("** Validating username for : " + username);
+            boolean username_valid = RecordsUtil.userExists(username);
+            System.out.println("** Username valid: " + username_valid);
+
+
+            if (!username_valid) {
+                logger.warning("Uknown user : " + username + ", aborting...");
+                return null;
+            }
+            int pass_valid = this.verifyPassword(username, pass);
             System.out.println("** Authenticating user: " + username);
             boolean signCorrect = challengeUser(client, username);
-            Message msg = new Message(CREDENTIALS_BAD);
             if (!signCorrect) {
                 logger.warning("Failed challenge : " + username);
                 return prepResponse(msg, username);
             }
             logger.info("Challenged : " + username);
-
-            System.out.println("** Validating username for : " + username);
-            boolean username_valid = RecordsUtil.userExists(username);
-            System.out.println("** Username valid: " + username_valid);
-            int pass_valid = this.verifyPassword(username, pass);
-
+            logger.info("Credentials OK : " + username);
             if (RecordsUtil.getContext(username).getLocked() == 1) {
                 logger.warning("Credentials not OK : " + username);
                 msg = new Message(LOCKED);
             } else if (username_valid && pass_valid == PASS_OK) {
-                logger.info("Credentials OK : " + username);
                 msg = new Message(CREDENTIALS_OK);
             } else if (pass_valid == LOCKED) {
                 logger.warning("Credentials not OK : " + username);
@@ -113,9 +119,11 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
             return prepResponse(msg, username);
         } catch (InvalidKeySpecException Ex) {
-            Message msg = new Message(CREDENTIALS_BAD);
+//            Message msg = new Message(CREDENTIALS_BAD);
             // Log the attempt with incorrect credentials
-            return prepResponse(msg, "");
+            return null;
+        } catch (FileNotFoundException exception) {
+            return null;
         }
     }
 
