@@ -1,6 +1,14 @@
 # SCC.363-Coursework-1
 A third year Computer Science coursework to implement varying degrees of security and functionality to a registration/login system in a medical environment.
 
+## Dependencies
+- Apache Commons Codec (commons-codec-1.15.jar)
+- Apache Commons IO (commons-io-2.4.jar)
+- ZXing Barcode Library (core-3.4.1.jar)
+- ZXing Java SE Extensions (javase-3.4.1.jar)
+- JSON Simple (json-simple-1.1.jar)
+- TOTP Library RFC 6283 (totp-1.0.jar)
+
 ## Usage
 To operate the system, a Windows 10 machine running JDK 13.0 is recommended.
 
