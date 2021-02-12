@@ -454,7 +454,7 @@ public class Main implements Serializable {
             }
         }
         catch (NullPointerException | FileNotFoundException exception) {
-            System.out.println("You might not be registered with medical service. Register now.");
+            System.out.println("\n\n<You might not be registered with medical service. Register now.>\n\n");
             mainScreen();
         }
     }
