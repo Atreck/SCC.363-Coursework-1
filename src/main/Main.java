@@ -638,9 +638,9 @@ public class Main implements Serializable {
 
                 // ------------------------------- FOR WINDOWS
                 // -----------------------------------//
-                // String command = "cmd.exe /c start " + "./" + username + "_QRcode.png";
+                String command = "cmd.exe /c start " + "./" + username + "_QRcode.png";
                 // ------------------------------- FOR LINUX --------------------------------//
-                String command = "xdg-open " + username + "_QRcode.png";
+                // String command = "xdg-open " + username + "_QRcode.png";
 
                 Runtime.getRuntime().exec(command);
                 System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);
