@@ -54,7 +54,7 @@ Key: ```none```
 Follow the on-screen instructions to invoke different actions, such as:
 
 - see group permissions
-  <br>go to [RecordsUtil.java](https://github.com/Atreck/SCC.363-Coursework-1/blob/main/src/main/RecordsUtil.java) to see mappings between numerical values to their human-readable form
+  <br>go to [RecordsUtil.java](src/main/RecordsUtil.java) to see mappings between numerical values to their human-readable form
 - update group permissions (as above)
 - get user's/ patient's records
 - update user's/ patient's records
