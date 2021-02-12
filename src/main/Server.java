@@ -1,33 +1,31 @@
 package main;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.rmi.Naming;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.util.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import java.text.SimpleDateFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.FileUtils;
-import org.json.simple.*;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import javax.crypto.SealedObject;
 import javax.crypto.SecretKey;
 
 import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.io.FileUtils;
 import org.json.simple.parser.ParseException;
 
 import encryption.CryptUtil;
@@ -35,7 +33,7 @@ import signatures.SignUtil;
 
 public class Server extends java.rmi.server.UnicastRemoteObject implements MedicalService {
 
-    // TODO: Add docs and comments.
+    private static final long serialVersionUID = 1L;
 
     // ----------------- STATUS CODES --------------//
     public static final int CHALLENGE_LEN = 50;
@@ -52,13 +50,12 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
     private final int FORBIDDEN = 403;
     private final int INACTIVE_TIMEOUT = 408;
     private final int AUTH_REQUIRED = 511;
-    private final int ERROR = 400;
-
+    // private final int ERROR = 400;
 
     // --------------- VS CODE PATH PREFIX ------------//
     private static String prefix = ".";
     // --------------- INTELLIJ PATH PREFIX ----------//
-//    private static String prefix = "src";
+    // private static String prefix = "src";
 
     private static final Logger logger = Logger.getLogger(Server.class.getName());
     private FileHandler handler;
@@ -68,21 +65,22 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy hh-mm-ss a");
         String currentLog = sdf.format(new Date()) + ".txt";
         File file = new File(prefix + "/Logs/" + currentLog);
-        
+
         // when someone doesn't have the Logs folder
         file.getParentFile().mkdirs();
         file.setReadOnly();
-//        RecordsUtil.addUser("Joe", "Admindoe", "admin",
-//                "JDoe@mediservice.com", "superUser89@pass",
-//                "Admins", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
+        // RecordsUtil.addUser("Joe", "Admindoe", "admin",
+        // "JDoe@mediservice.com", "superUser89@pass",
+        // "Admins", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
 
         handler = new FileHandler(prefix + "/Logs/" + currentLog);
         logger.addHandler(handler);
 
-        SimpleFormatter formatter = new SimpleFormatter();  
+        SimpleFormatter formatter = new SimpleFormatter();
         handler.setFormatter(formatter);
 
-       addPatient1(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
+        addPatient1(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com",
+                "MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
     public SafeMessage authenticateUser(SafeMessage safeMessage) throws Exception {
@@ -99,7 +97,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             System.out.println("** Validating username for : " + username);
             boolean username_valid = RecordsUtil.userExists(username);
             System.out.println("** Username valid: " + username_valid);
-
 
             if (!username_valid) {
                 logger.warning("Uknown user : " + username + ", aborting...");
@@ -126,7 +123,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 
             return prepResponse(msg, username);
         } catch (InvalidKeySpecException Ex) {
-//            Message msg = new Message(CREDENTIALS_BAD);
+            // Message msg = new Message(CREDENTIALS_BAD);
             // Log the attempt with incorrect credentials
             return null;
         } catch (FileNotFoundException exception) {
@@ -170,7 +167,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         if (status == LOCKED) {
             // Add implementation in Server.java to lock out user using the lockUser()
             // method.
-            //------------------ ALREADY IMPLEMENTED:) -------------------------------//
+            // ------------------ ALREADY IMPLEMENTED:) -------------------------------//
             System.out.println("** Password incorrect - account locked for user: " + username);
             lockUser(username);
             logger.info("PASS INCORRECT, LOCKED ACCOUNT: " + username);
@@ -196,7 +193,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         logger.info("Verifying code : " + username);
 
         if (status == LOCKED) {
-            //------------------ ALREADY IMPLEMENTED:) -------------------------------//
+            // ------------------ ALREADY IMPLEMENTED:) -------------------------------//
             lockUser(username);
             System.out.println("** Incorrect code - account has been locked for user: " + username);
             logger.warning("AUTH CODE INCORRECT, ACCOUNT LOCKED : " + username);
@@ -229,7 +226,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
             logger.warning("KEY DELETION UNSUCCESSFUL : " + user);
         }
 
-        if(!new File("./Users/" + RecordsUtil.getGroup(user) + "/" + user + ".json").delete()) {
+        if (!new File("./Users/" + RecordsUtil.getGroup(user) + "/" + user + ".json").delete()) {
             logger.warning("User record couldn't be deleted for : " + user + " by : " + issuer);
             return false;
         }
@@ -290,43 +287,44 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return prepResponse(msg, issuer);
     }
 
-     public SafeMessage addUser(SafeMessage safeMessage) throws Exception {
-         Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
+    public SafeMessage addUser(SafeMessage safeMessage) throws Exception {
+        Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
 
-         String issuer = message.getIssuer();
-         String name = message.getName();
-         String surname = message.getSurname();
-         String username = message.getUsername();
-         String email = name.substring(0, 1) + surname + "@mediservice.com";
-         String pass = message.getPassword();
-         String group = message.getGroup();
-         String code = message.getCode();
+        String issuer = message.getIssuer();
+        String name = message.getName();
+        String surname = message.getSurname();
+        String username = message.getUsername();
+        String email = name.substring(0, 1) + surname + "@mediservice.com";
+        String pass = message.getPassword();
+        String group = message.getGroup();
+        String code = message.getCode();
 
-//         System.out.println(group);
+        // System.out.println(group);
 
-         int inactiveOrAnauth = checkTimeoutAndActive(issuer);
+        int inactiveOrAnauth = checkTimeoutAndActive(issuer);
 
-         if (inactiveOrAnauth != 0) {
-             Message msg1 = new Message(inactiveOrAnauth);
-             return prepResponse(msg1, issuer);
-         }
+        if (inactiveOrAnauth != 0) {
+            Message msg1 = new Message(inactiveOrAnauth);
+            return prepResponse(msg1, issuer);
+        }
 
-         Message msg = new Message(REGISTRATION_FAIL);
-         RecordsUtil.updateUserTimestamp(issuer);
-         if (!RecordsUtil.userExists(username)) {
-             boolean status = false;
-             msg = new Message(FORBIDDEN);
-             status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_ACCOUNTS);
-//             if (!status) status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_PATIENTS);
-             if (status) {
-                 RecordsUtil.addUser(name, surname, username, email, pass, group, code);
-                 register(username); // this is so that a key pair is generated
-                 msg = new Message(OK);
-             }
-         }
+        Message msg = new Message(REGISTRATION_FAIL);
+        RecordsUtil.updateUserTimestamp(issuer);
+        if (!RecordsUtil.userExists(username)) {
+            boolean status = false;
+            msg = new Message(FORBIDDEN);
+            status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_ACCOUNTS);
+            // if (!status) status = RecordsUtil.hasPerms(issuer,
+            // RecordsUtil.CAN_REGISTER_PATIENTS);
+            if (status) {
+                RecordsUtil.addUser(name, surname, username, email, pass, group, code);
+                register(username); // this is so that a key pair is generated
+                msg = new Message(OK);
+            }
+        }
 
-         return prepResponse(msg, issuer);
-     }
+        return prepResponse(msg, issuer);
+    }
 
     public boolean strengthCheck(String input) throws Exception {
         Pattern p = Pattern.compile("[^A-Za-z0-9 ]"); // Find character not in that list
@@ -344,7 +342,8 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
                     p = Pattern.compile("[a-z]");
                     m = p.matcher(input);
 
-                    if ((m.find()) && (input.length() > 9)) return true;
+                    if ((m.find()) && (input.length() > 9))
+                        return true;
                 }
             }
         }
@@ -395,7 +394,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return status;
     }
 
-
     public SafeMessage getUsers(SafeMessage safeMessage) throws Exception {
         Message data = CryptUtil.decryptSafeMessage("server", safeMessage);
 
@@ -431,7 +429,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         // check if inactiveTimeout == true
         // if true - evict
         // else update last_active and continue
-
 
         // returns 0 if user is logged in and hasn't triggered timeout
         // else returns INACTIVE_TIMEOUT or AUTH_REQUIRED
@@ -507,7 +504,6 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return prepResponse(message, issuer);
     }
 
-
     public SafeMessage getGroupPerms(SafeMessage safeMessage) throws Exception {
         Message data = CryptUtil.decryptSafeMessage("server", safeMessage);
 
@@ -554,7 +550,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_WRITE_GROUPS);
         RecordsUtil.updateUserTimestamp(issuer);
         if (status) {
-//            System.out.println("Setting new permissions for: " + group);
+            // System.out.println("Setting new permissions for: " + group);
             RecordsUtil.setGroupPerms(newPermissions, group);
             message = new Message(OK);
         }
@@ -581,7 +577,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_ASSIGN_PERMS);
         RecordsUtil.updateUserTimestamp(issuer);
         if (status) {
-//            System.out.println("Setting new permissions for: " + group);
+            // System.out.println("Setting new permissions for: " + group);
             RecordsUtil.assignToGroup(assignee, group);
             message = new Message(OK);
         }

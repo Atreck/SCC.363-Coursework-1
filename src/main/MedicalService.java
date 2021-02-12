@@ -3,8 +3,6 @@ package main;
 import java.rmi.Remote;
 
 public interface MedicalService extends Remote {
-    
-    //TODO: Add docs and comments.
 
     SafeMessage authenticateUser(SafeMessage obj) throws Exception;
 
@@ -45,6 +43,6 @@ public interface MedicalService extends Remote {
     void register(String user) throws Exception;
 
     String secretKeyGen() throws Exception;
-    
+
     void lockUser(String user) throws Exception;
 }

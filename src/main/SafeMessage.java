@@ -1,10 +1,12 @@
 package main;
 
-import javax.crypto.SealedObject;
 import java.io.Serializable;
+
+import javax.crypto.SealedObject;
 
 public class SafeMessage implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     private SealedObject obj;
     private byte[] secretKeyEncrypted;
 

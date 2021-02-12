@@ -1,14 +1,5 @@
 package main;
 
-import de.taimos.totp.TOTP;
-import encryption.CryptUtil;
-import org.apache.commons.codec.binary.Base32;
-import org.apache.commons.codec.binary.Hex;
-import org.json.simple.*;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import javax.imageio.IIOException;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -17,6 +8,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.Hex;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import de.taimos.totp.TOTP;
+import encryption.CryptUtil;
 
 public class RecordsUtil {
 
@@ -45,26 +46,26 @@ public class RecordsUtil {
     public static final long CAN_READ_GROUPS = 17;
     public static final long CAN_WRITE_GROUPS = 18;
 
-
     // ------------------ TIMEOUT ------------------//
     // timeout in milliseconds
-    //current timestamp - last_accessed >= timeout ----> log out a user
+    // current timestamp - last_accessed >= timeout ----> log out a user
     // 5 minutes
-    private static final long TIMEOUT = 300000;            // 5 mins
+    private static final long TIMEOUT = 300000; // 5 mins
 
     // --------------- VS CODE PATH PREFIX ------------//
     private static String prefix = ".";
     // --------------- INTELLIJ PATH PREFIX ----------//
-//    private static String prefix = "src";
+    // private static String prefix = "src";
 
     public static boolean hasPerms(String username, Long perms) throws IOException, ParseException {
         Context context = getContext(username);
-        if (context.getPermissions().contains(perms)) return true;
+        if (context.getPermissions().contains(perms))
+            return true;
         return false;
     }
 
     public static void assignToGroup(String assignee, String group) throws IOException, ParseException {
-        String path = prefix +"/Users/users.json";
+        String path = prefix + "/Users/users.json";
         Object obj1 = new JSONParser().parse(new FileReader(path));
         JSONObject jo1 = (JSONObject) obj1;
 
@@ -103,7 +104,7 @@ public class RecordsUtil {
     }
 
     public static Map<String, String> readUsers() throws IOException, ParseException {
-        Object obj1 = new JSONParser().parse(new FileReader(prefix +"/Users/users.json"));
+        Object obj1 = new JSONParser().parse(new FileReader(prefix + "/Users/users.json"));
         JSONObject jo = (JSONObject) obj1;
         Map<String, String> users = new HashMap<>();
 
@@ -119,7 +120,7 @@ public class RecordsUtil {
     }
 
     public static HashSet<Long> readGroupPerms(String group) throws IOException, ParseException {
-        Object obj = new JSONParser().parse(new FileReader(prefix+"/Users/permissions.json"));
+        Object obj = new JSONParser().parse(new FileReader(prefix + "/Users/permissions.json"));
         JSONObject jo = (JSONObject) obj;
 
         JSONArray ja = (JSONArray) jo.get(group);
@@ -127,24 +128,24 @@ public class RecordsUtil {
         HashSet<Long> permissions = new HashSet<>();
         // iterating through permissions
         Iterator itr2 = ja.iterator();
-        while (itr2.hasNext())
-        {
+        while (itr2.hasNext()) {
             long permission = (long) itr2.next();
             permissions.add(permission);
-//            System.out.println(permission);
+            // System.out.println(permission);
         }
 
         return permissions;
     }
 
     public static void setGroupPerms(HashSet<Long> permissions, String group) throws IOException, ParseException {
-        String path = prefix+"/Users/permissions.json";
+        String path = prefix + "/Users/permissions.json";
         Object obj = new JSONParser().parse(new FileReader(path));
-//        System.out.println("Setting new permissions..");
+        // System.out.println("Setting new permissions..");
         JSONObject jo = (JSONObject) obj;
 
         JSONArray ja = (JSONArray) jo.get(group);
-        for (Long l: permissions) ja.add(l);
+        for (Long l : permissions)
+            ja.add(l);
 
         jo.put(group, ja);
 
@@ -157,7 +158,7 @@ public class RecordsUtil {
     }
 
     public static String getGroup(String username) throws IOException, ParseException {
-        Object obj1 = new JSONParser().parse(new FileReader(prefix +"/Users/users.json"));
+        Object obj1 = new JSONParser().parse(new FileReader(prefix + "/Users/users.json"));
         JSONObject jo1 = (JSONObject) obj1;
         // check to which group the user belongs to
         String group = (String) jo1.get(username);
@@ -166,7 +167,7 @@ public class RecordsUtil {
     }
 
     private static JSONObject getUserJObj(String username, String group) throws IOException, ParseException {
-        String path = String.format(prefix+"/Users/%s/%s.json", group, username);
+        String path = String.format(prefix + "/Users/%s/%s.json", group, username);
 
         Object obj2 = new JSONParser().parse(new FileReader(path));
         // typecasting obj to JSONObject
@@ -176,7 +177,7 @@ public class RecordsUtil {
     }
 
     private static void updateUserJobj(String username, String group, JSONObject obj) throws FileNotFoundException {
-        String path = String.format(prefix+"/Users/%s/%s.json", group, username);
+        String path = String.format(prefix + "/Users/%s/%s.json", group, username);
 
         PrintWriter pw = new PrintWriter(path);
         pw.write(obj.toJSONString());
@@ -188,10 +189,6 @@ public class RecordsUtil {
     public static Context getContext(String username) throws IOException, ParseException {
 
         String group = getGroup(username);
-
-        // now check permissions associated with that group
-        Object obj = new JSONParser().parse(new FileReader(prefix+"/Users/permissions.json"));
-        JSONObject jo = (JSONObject) obj;
 
         // typecasting obj to JSONObject
         JSONObject jo2 = getUserJObj(username, group);
@@ -208,7 +205,8 @@ public class RecordsUtil {
         // typecasting obj to JSONObject
         JSONObject jo = getUserJObj(username, group);
 
-        // active indicates whether a user has been authenticated, etc and logged in successfully or exited the system
+        // active indicates whether a user has been authenticated, etc and logged in
+        // successfully or exited the system
         // 0 - inactive
         // 1 - active
         jo.put("active", 1);
@@ -243,14 +241,15 @@ public class RecordsUtil {
     }
 
     public static boolean userExists(String username) throws IOException, ParseException {
-        Object obj = new JSONParser().parse(new FileReader(prefix+"/Users/users.json"));
+        Object obj = new JSONParser().parse(new FileReader(prefix + "/Users/users.json"));
 
         // typecasting obj to JSONObject
         JSONObject jo = (JSONObject) obj;
         JSONArray users = (JSONArray) jo.get("usernames");
 
         // it is possible to check contains
-        if (users.contains(username)) return true;
+        if (users.contains(username))
+            return true;
 
         return false;
     }
@@ -265,7 +264,8 @@ public class RecordsUtil {
             obj.put("active", 0);
             updateUserJobj(username, group, obj);
             return true;
-        } return false;
+        }
+        return false;
     }
 
     public static int passMatches(String username, String providedPass) throws Exception {
@@ -284,16 +284,17 @@ public class RecordsUtil {
         String thisHash = CryptUtil.saltPass(providedPass, salt);
 
         if (thisHash.equals(correctHash)) {
-            jo.put("tries", TRIES);     // reset tries
+            jo.put("tries", TRIES); // reset tries
             updateUserJobj(username, group, jo);
             return PASS_OK;
-        }
-        else {
+        } else {
             tries -= 1;
             jo.put("tries", tries);
             updateUserJobj(username, group, jo);
-            if (tries == 0) return LOCKED;
-            else return CREDENTIALS_BAD;
+            if (tries == 0)
+                return LOCKED;
+            else
+                return CREDENTIALS_BAD;
         }
     }
 
@@ -313,16 +314,17 @@ public class RecordsUtil {
         long tries = (long) jo.get("tries");
 
         if (providedCode.equals(code)) {
-            jo.put("tries", TRIES);     // reset tries
+            jo.put("tries", TRIES); // reset tries
             updateUserJobj(username, group, jo);
             return CODE_CORRECT;
-        }
-        else {
+        } else {
             tries -= 1;
             jo.put("tries", tries);
             updateUserJobj(username, group, jo);
-            if (tries == 0) return LOCKED;
-            else return CODE_INCORRECT;
+            if (tries == 0)
+                return LOCKED;
+            else
+                return CODE_INCORRECT;
         }
     }
 
@@ -332,10 +334,8 @@ public class RecordsUtil {
         return TOTP.getOTP(hexKey);
     }
 
-    public static void addPatient(
-            String username, String name, String surname, String email,
-            String password, String code)
-            throws Exception {
+    public static void addPatient(String username, String name, String surname, String email, String password,
+            String code) throws Exception {
 
         String salt = CryptUtil.genSalt().toString();
         String saltedPass = CryptUtil.saltPass(password, salt);
@@ -356,16 +356,16 @@ public class RecordsUtil {
         jo.put("last_active", 0);
         jo.put("locked", 0);
 
-        PrintWriter pw = new PrintWriter(String.format(prefix+"/Users/Patients/%s.json", username));
+        PrintWriter pw = new PrintWriter(String.format(prefix + "/Users/Patients/%s.json", username));
         pw.write(jo.toJSONString());
         pw.flush();
         pw.close();
 
         // add to user -> group mapping file
-        Object obj = new JSONParser().parse(new FileReader(prefix+"/Users/users.json"));
+        Object obj = new JSONParser().parse(new FileReader(prefix + "/Users/users.json"));
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj;
-        PrintWriter pw2 = new PrintWriter(prefix+"/Users/users.json");
+        PrintWriter pw2 = new PrintWriter(prefix + "/Users/users.json");
         JSONArray users = (JSONArray) jo2.get("usernames");
         users.add(username);
         jo2.put("usernames", users);
@@ -375,8 +375,8 @@ public class RecordsUtil {
         pw2.close();
     }
 
-    public static void addUser(String name, String surname, String username, String email,
-                               String password, String group, String code)  throws  Exception {
+    public static void addUser(String name, String surname, String username, String email, String password,
+            String group, String code) throws Exception {
 
         String salt = CryptUtil.genSalt().toString();
         String saltedPass = CryptUtil.saltPass(password, salt);
@@ -394,16 +394,16 @@ public class RecordsUtil {
         jo.put("last_active", 0);
         jo.put("locked", 0);
 
-        PrintWriter pw = new PrintWriter(String.format(prefix+"/Users/%s/%s.json", group, username));
+        PrintWriter pw = new PrintWriter(String.format(prefix + "/Users/%s/%s.json", group, username));
         pw.write(jo.toJSONString());
         pw.flush();
         pw.close();
 
         // add to user -> group mapping file
-        Object obj = new JSONParser().parse(new FileReader(prefix+"/Users/users.json"));
+        Object obj = new JSONParser().parse(new FileReader(prefix + "/Users/users.json"));
         // typecasting obj to JSONObject
         JSONObject jo2 = (JSONObject) obj;
-        PrintWriter pw2 = new PrintWriter(prefix+"/Users/users.json");
+        PrintWriter pw2 = new PrintWriter(prefix + "/Users/users.json");
         jo2.put(username, group);
         JSONArray users = (JSONArray) jo2.get("usernames");
         users.add(username);
@@ -415,64 +415,65 @@ public class RecordsUtil {
 
     public static void main(String[] args) throws Exception {
 
-//        // creating JSONObject
-//        JSONObject jo = new JSONObject();
-//
-//        // putting data to JSONObject
-//        jo.put("firstName", "John");
-//        jo.put("lastName", "Doe");
-//        jo.put("email", "jdoe@email.com");
-//        jo.put("age", 26);
-//
-//        // for address data, first create LinkedHashMap
-//        Map m = new LinkedHashMap(4);
-//        m.put("streetAddress", "21 Broadway Street");
-//        m.put("city", "New York");
-//        m.put("state", "NY");
-//        m.put("postalCode", 10021);
-//
-//        jo.put("address", m);
-//
-//        Map r = new LinkedHashMap(2);
-//        r.put("summary", "Patient is stupid and probs has the lowest IQ on earth.");
-//        r.put("prescriptions", "Start reading books mate.");
-//        jo.put("records", r);
-//
-//        // writing JSON to file
-//        PrintWriter pw = new PrintWriter("src/Users/128/JohnDoe.json");
-//        pw.write(jo.toJSONString());
-//
-//        pw.flush();
-//        pw.close();
+        // // creating JSONObject
+        // JSONObject jo = new JSONObject();
+        //
+        // // putting data to JSONObject
+        // jo.put("firstName", "John");
+        // jo.put("lastName", "Doe");
+        // jo.put("email", "jdoe@email.com");
+        // jo.put("age", 26);
+        //
+        // // for address data, first create LinkedHashMap
+        // Map m = new LinkedHashMap(4);
+        // m.put("streetAddress", "21 Broadway Street");
+        // m.put("city", "New York");
+        // m.put("state", "NY");
+        // m.put("postalCode", 10021);
+        //
+        // jo.put("address", m);
+        //
+        // Map r = new LinkedHashMap(2);
+        // r.put("summary", "Patient is stupid and probs has the lowest IQ on earth.");
+        // r.put("prescriptions", "Start reading books mate.");
+        // jo.put("records", r);
+        //
+        // // writing JSON to file
+        // PrintWriter pw = new PrintWriter("src/Users/128/JohnDoe.json");
+        // pw.write(jo.toJSONString());
+        //
+        // pw.flush();
+        // pw.close();
 
-        //----------------------------------------------------------------------------------//
-        //--------------------------- Read from JSON ---------------------------------------//
+        // ----------------------------------------------------------------------------------//
+        // --------------------------- Read from JSON
+        // ---------------------------------------//
         // parsing file "JSONExample.json"
-//        Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
-//
-//        JSONObject ja = (JSONObject) obj;
-//
-//        Iterator iter = ja.iterator();
-//
-//        while(iter.hasNext()) {
-//            System.out.println(iter.next());
-//        }
-//
-//        // typecasting obj to JSONObject
-//        JSONObject jo = (JSONObject) obj;
-//
-//        // getting firstName and lastName
-//        String firstName = (String) jo.get("firstName");
-//        String lastName = (String) jo.get("lastName");
-//
-//        System.out.println(firstName);
+        // Object obj = new JSONParser().parse(new FileReader("src/Users/users.json"));
+        //
+        // JSONObject ja = (JSONObject) obj;
+        //
+        // Iterator iter = ja.iterator();
+        //
+        // while(iter.hasNext()) {
+        // System.out.println(iter.next());
+        // }
+        //
+        // // typecasting obj to JSONObject
+        // JSONObject jo = (JSONObject) obj;
+        //
+        // // getting firstName and lastName
+        // String firstName = (String) jo.get("firstName");
+        // String lastName = (String) jo.get("lastName");
+        //
+        // System.out.println(firstName);
 
-//        jo.put("firstName", "Jessica");
-//        PrintWriter pw = new PrintWriter("src/Users/Patients/JohnDoe.json");
-//        pw.write(jo.toJSONString());
-//        pw.flush();
-//        pw.close();
-//
-//        System.out.println((String) jo.get("firstName"));
+        // jo.put("firstName", "Jessica");
+        // PrintWriter pw = new PrintWriter("src/Users/Patients/JohnDoe.json");
+        // pw.write(jo.toJSONString());
+        // pw.flush();
+        // pw.close();
+        //
+        // System.out.println((String) jo.get("firstName"));
     }
 }

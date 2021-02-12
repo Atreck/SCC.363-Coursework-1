@@ -1,6 +1,5 @@
 package main;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
@@ -18,7 +17,6 @@ import javax.crypto.SealedObject;
 import javax.crypto.SecretKey;
 
 import com.google.zxing.BarcodeFormat;
-import com.google.zxing.client.j2se.GUIRunner;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
@@ -28,6 +26,7 @@ import signatures.SignUtil;
 
 public class Main implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     private static Scanner s = new Scanner(System.in);
     private static MedicalService server;
     private String tempName;
@@ -61,7 +60,6 @@ public class Main implements Serializable {
     private final String UPDATE_RECORDS = "update_records\\s\\w+";
     private final String GET_RECORDS = "get_records\\s\\w+";
 
-
     private final int CREDENTIALS_OK = 2;
     private final int CREDENTIALS_BAD = 3;
     private final int CODE_INCORRECT = 4;
@@ -74,7 +72,7 @@ public class Main implements Serializable {
     private final int FORBIDDEN = 403;
     private final int INACTIVE_TIMEOUT = 408;
     private final int AUTH_REQUIRED = 511;
-    private final int ERROR = 400;
+    // private final int ERROR = 400;
 
     // TODO: Add docs and comments.
 
@@ -158,8 +156,8 @@ public class Main implements Serializable {
         } else if (action.matches(ADD_USER)) {
             addUser(username);
         } else if (action.matches(DEL_USER)) {
-            String user = action.split(" ") [1];
-            if(RecordsUtil.userExists(user))
+            String user = action.split(" ")[1];
+            if (RecordsUtil.userExists(user))
                 delUser(user, username);
             else {
                 System.out.println("User not found.");
@@ -211,15 +209,15 @@ public class Main implements Serializable {
         System.out.println("Please confirm by either typing CONFIRM or EXIT to return to menu.");
         String cmd = userInput();
         System.out.println(cmd);
-        if(cmd.matches("CONFIRM")) {
+        if (cmd.matches("CONFIRM")) {
             System.out.println("Please state a reason for deletion.");
             String reason = userInput();
-            if(!server.delUser(user, issuer, reason)) {
+            if (!server.delUser(user, issuer, reason)) {
                 System.out.println("User deletion has been unsuccessful. Please check logs for more info.");
             } else {
                 System.out.println("User deletion successful.");
             }
-        } else if(cmd.matches("EXIT")) {
+        } else if (cmd.matches("EXIT")) {
             menuScreenAdmin(issuer);
         } else {
             delUser(user, issuer);
@@ -237,7 +235,7 @@ public class Main implements Serializable {
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("\nREGISTERED USERS:\n");
-            for (Map.Entry<String,String> entry : response.getUsers().entrySet()) {
+            for (Map.Entry<String, String> entry : response.getUsers().entrySet()) {
                 System.out.println("Username: " + entry.getKey() + "   Group: " + entry.getValue());
             }
             System.out.println("");
@@ -276,7 +274,7 @@ public class Main implements Serializable {
 
     public void assignGroupPerms(String issuer, String group, String[] permissions) throws Exception {
         HashSet<Long> newPermissions = new HashSet<>();
-        for (String s: permissions) {
+        for (String s : permissions) {
             newPermissions.add(Long.parseLong(s));
         }
 
@@ -459,15 +457,18 @@ public class Main implements Serializable {
                 if (status == CODE_CORRECT) {
                     System.out.println("\n\nWELCOME BACK " + tempUsername + "\n");
                     // helper
-//                 System.out.print("Your group: " + response.getGroup());
+                    // System.out.print("Your group: " + response.getGroup());
                     switch (response.getGroup()) {
                         case "Patients":
                             menuScreenPatient(tempUsername);
                         case "Admins":
                             menuScreenAdmin(tempUsername);
-                        case "Nurses": menuScreenStaff(tempUsername);
-                        case "Doctors": menuScreenStaff(tempUsername);
-                        case "Receptionists": menuScreenStaff(tempUsername);
+                        case "Nurses":
+                            menuScreenStaff(tempUsername);
+                        case "Doctors":
+                            menuScreenStaff(tempUsername);
+                        case "Receptionists":
+                            menuScreenStaff(tempUsername);
                         default:
                             exit();
                     }
@@ -479,8 +480,7 @@ public class Main implements Serializable {
                 System.out.println("\n\n<There is an impostor among us.>");
                 checkLocked(response.getStatus());
             }
-        }
-        catch (NullPointerException | FileNotFoundException exception) {
+        } catch (NullPointerException | FileNotFoundException exception) {
             System.out.println("\n\n<You might not be registered with medical service. Register now.>\n\n");
             mainScreen();
         }
@@ -507,12 +507,17 @@ public class Main implements Serializable {
         tempUsername = userInput();
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
-        if(server.strengthCheck(new Message(null, pass))) {
+        if (server.strengthCheck(new Message(null, pass))) {
             String code = setUpAuthentication(tempUsername);
             Message msg = new Message(tempName, tempSurname, tempUsername, pass, tempMail, code);
             int status = server.addPatient1(msg);
-            System.out.println("\n\nWOHOO REGISTRATION SUCCESSFUL!");
-            mainScreen();
+            if(status == REGISTRATION_SUCCESS) {
+                System.out.println("\n\nAccount registered!");
+                mainScreen();
+            } else if(status == REGISTRATION_FAIL) {
+                System.out.println("\n\nAccount not registered. Please contact administrators for more information.");
+                mainScreen();
+            }
         } else {
             System.out.println("\nAn account with those credentials may already exist or your password is too weak.");
             System.out.println("Please ensure your password includes all requirements: ");
@@ -525,8 +530,7 @@ public class Main implements Serializable {
         }
     }
 
-
-    private void registerLogged(String issuer)  throws Exception {
+    private void registerLogged(String issuer) throws Exception {
         System.out.println("\nREGISTRATION SYSTEM\n\nEnter first name:");
         // Username input
         tempName = userInput();
@@ -539,7 +543,7 @@ public class Main implements Serializable {
         String username = userInput();
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
-        if(server.strengthCheck(new Message(null, pass))) {
+        if (server.strengthCheck(new Message(null, pass))) {
             String code = setUpAuthentication(username);
             Message msg = new Message(issuer, tempName, tempSurname, username, pass, tempMail, code);
 
@@ -557,9 +561,10 @@ public class Main implements Serializable {
                 exit();
             } else if (response.getStatus() == AUTH_REQUIRED) {
                 System.out.println("You are not logged in!");
-                exit();            
+                exit();
             } else if (response.getStatus() == REGISTRATION_FAIL) {
-                System.out.println("\nYour username may not be one that has been previously registered before or your password is too weak.");
+                System.out.println(
+                        "\nYour username may not be one that has been previously registered before or your password is too weak.");
                 System.out.println("Please ensure your password includes all requirements: ");
                 System.out.println("At least 1 lowercase character");
                 System.out.println("At least 1 uppercase character");
@@ -567,8 +572,7 @@ public class Main implements Serializable {
                 System.out.println("At least 1 special character");
                 System.out.println("At least 10 characters");
             }
-        }
-        else {
+        } else {
             System.out.println("\nAn account with those credentials may already exist or password is too weak.");
             System.out.println("Please ensure your password includes all requirements: ");
             System.out.println("At least 1 lowercase character");
@@ -634,9 +638,9 @@ public class Main implements Serializable {
 
                 // ------------------------------- FOR WINDOWS
                 // -----------------------------------//
-//                String command = "cmd.exe /c start " + "./" + username + "_QRcode.png";
+                // String command = "cmd.exe /c start " + "./" + username + "_QRcode.png";
                 // ------------------------------- FOR LINUX --------------------------------//
-                 String command = "xdg-open " + username + "_QRcode.png";
+                String command = "xdg-open " + username + "_QRcode.png";
 
                 Runtime.getRuntime().exec(command);
                 System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);

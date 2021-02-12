@@ -1,29 +1,42 @@
 package encryption;
 
-import main.Message;
-import main.SafeMessage;
-import org.apache.commons.codec.digest.Crypt;
-
-import javax.crypto.*;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SealedObject;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
+
+import main.Message;
+import main.SafeMessage;
 
 /**
  * A simple utility aiding the creation of public and private key pairs.
  *
- * NOTE: Normally there is some authority assigning the keys,
- * it wouldn't look like this in the production - this is just a
- * simplified version to aid the development process.
+ * NOTE: Normally there is some authority assigning the keys, it wouldn't look
+ * like this in the production - this is just a simplified version to aid the
+ * development process.
  */
 
 public class CryptUtil {
@@ -34,7 +47,7 @@ public class CryptUtil {
     // --------------- VS CODE PATH PREFIX ------------//
     private static String prefix = ".";
     // --------------- INTELLIJ PATH PREFIX ----------//
-//    private static String prefix = "src";
+    // private static String prefix = "src";
 
     /**
      * A method enabling the storage of keys in files.
@@ -56,11 +69,12 @@ public class CryptUtil {
     }
 
     /**
-     * Generates a pair of public and private keys.
-     * Saved in a dedicated folder based on a client username - can be used by a server later.
-     * For the client - the pair is stored directly in their associated object.
+     * Generates a pair of public and private keys. Saved in a dedicated folder
+     * based on a client username - can be used by a server later. For the client -
+     * the pair is stored directly in their associated object.
      *
-     * @param algo algorithm to be used for instantiating the KeyPairGenerator, e.g. "RSA", "DSA"
+     * @param algo algorithm to be used for instantiating the KeyPairGenerator, e.g.
+     *             "RSA", "DSA"
      * @param user name of the user for which this keyPair is going to be generated
      * @return the generated KeyPair consisting of a public and a private key
      * @throws NoSuchAlgorithmException
@@ -72,14 +86,15 @@ public class CryptUtil {
         // Keys can be 1024 or 2048-bit long (the longer the harder to crack)
         KeyPair pair = keyGen.generateKeyPair();
 
-        saveInFile(prefix+"/Keys/" + user + "/PublicKey", pair.getPublic().getEncoded());
-        saveInFile(prefix+"/Keys/" + user + "/PrivateKey", pair.getPrivate().getEncoded());
+        saveInFile(prefix + "/Keys/" + user + "/PublicKey", pair.getPublic().getEncoded());
+        saveInFile(prefix + "/Keys/" + user + "/PrivateKey", pair.getPrivate().getEncoded());
 
         return pair;
     }
 
     /**
      * Helper function generating a secret key - meant for symmetric encryption.
+     * 
      * @return secret key
      * @throws Exception
      */
@@ -94,9 +109,8 @@ public class CryptUtil {
     }
 
     /**
-     * TODO: update the docs
-     * Helper method for decoding a private key from a base64 encoded String
-     * into a PrivateKey java object.
+     * TODO: update the docs Helper method for decoding a private key from a base64
+     * encoded String into a PrivateKey java object.
      *
      * @param algo algorithm on which the key is based (DSA/ RSA)
      * @return a PrivateKey instance based on paramas provided
@@ -106,30 +120,31 @@ public class CryptUtil {
     public static PrivateKey getPrivateKey(String algo, String username)
             throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
-         String path = String.format(prefix+"/Keys/%s/PrivateKey", username);
+        String path = String.format(prefix + "/Keys/%s/PrivateKey", username);
         FileInputStream fis = new FileInputStream(path);
         byte[] privateKey = fis.readAllBytes();
 
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKey);
         KeyFactory keyFactory = KeyFactory.getInstance(algo);
         PrivateKey privKey = keyFactory.generatePrivate(keySpec);
+        fis.close();
 
         return privKey;
     }
 
     /**
-     * Helper method for decoding a public key from a base64 encoded String
-     * into a PublicKey java object.
+     * Helper method for decoding a public key from a base64 encoded String into a
+     * PublicKey java object.
      *
      * @param algo algorithm on which the key is based (DSA/ RSA)
      * @return a PublicKey instance based on paramas provided
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException
      */
-    public static PublicKey getPublicKey(String algo, String username) throws NoSuchAlgorithmException,
-            InvalidKeySpecException, IOException {
+    public static PublicKey getPublicKey(String algo, String username)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
-         String path = String.format(prefix+"/Keys/%s/PublicKey", username);
+        String path = String.format(prefix + "/Keys/%s/PublicKey", username);
 
         FileInputStream fis = new FileInputStream(path);
         byte[] pubKey = fis.readAllBytes();
@@ -137,14 +152,14 @@ public class CryptUtil {
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(pubKey);
         KeyFactory keyFactory = KeyFactory.getInstance(algo);
         PublicKey publicKey = keyFactory.generatePublic(keySpec);
+        fis.close();
 
         return publicKey;
     }
 
-
     /**
-     * Helper function to encrypt data being exchanged between a client and the server.
-     * Data is assumed to be an instance of the Message object.
+     * Helper function to encrypt data being exchanged between a client and the
+     * server. Data is assumed to be an instance of the Message object.
      *
      * @param obj       Message to encrypted
      * @param secretKey a secret key generated by an entity sending a message
@@ -157,8 +172,8 @@ public class CryptUtil {
      * @throws IOException
      */
     public static SealedObject encrypt(Message obj, SecretKey secretKey)
-            throws IllegalBlockSizeException, InvalidKeyException, NoSuchAlgorithmException,
-            NoSuchPaddingException, InvalidKeySpecException, IOException {
+            throws IllegalBlockSizeException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException,
+            InvalidKeySpecException, IOException {
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
 
@@ -168,8 +183,8 @@ public class CryptUtil {
     }
 
     /**
-     * Helper function to encrypt data being exchanged between a client and the server.
-     * Data is assumed to be an instance of the Message object.
+     * Helper function to encrypt data being exchanged between a client and the
+     * server. Data is assumed to be an instance of the Message object.
      *
      * @param secretKey to be encrypted by an entity sending a message
      * @param publicKey public key of an entity to which the message is sent
@@ -182,8 +197,8 @@ public class CryptUtil {
      * @throws IOException
      */
     public static byte[] encrypt(SecretKey secretKey, PublicKey publicKey)
-            throws IllegalBlockSizeException, InvalidKeyException, NoSuchAlgorithmException,
-            NoSuchPaddingException, InvalidKeySpecException, IOException, BadPaddingException {
+            throws IllegalBlockSizeException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException,
+            InvalidKeySpecException, IOException, BadPaddingException {
         Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 
@@ -193,11 +208,12 @@ public class CryptUtil {
     }
 
     /**
-     * A helper function to decrypt an ecnrypted Message sent between a client
-     * and a server.
+     * A helper function to decrypt an ecnrypted Message sent between a client and a
+     * server.
      *
      * @param object    an encrypted Message instance
-     * @param secretKey secretKey decrypted by an entity for which the message was intended
+     * @param secretKey secretKey decrypted by an entity for which the message was
+     *                  intended
      * @return a decrypted instance of Message object
      * @throws NoSuchPaddingException
      * @throws NoSuchAlgorithmException
@@ -206,9 +222,8 @@ public class CryptUtil {
      * @throws ClassNotFoundException
      * @throws InvalidKeySpecException
      */
-    public static Message decrypt(SealedObject object, SecretKey secretKey)
-            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
-            IOException, ClassNotFoundException {
+    public static Message decrypt(SealedObject object, SecretKey secretKey) throws NoSuchPaddingException,
+            NoSuchAlgorithmException, InvalidKeyException, IOException, ClassNotFoundException {
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.DECRYPT_MODE, secretKey);
         Message decrypted = (Message) object.getObject(secretKey);
@@ -216,12 +231,14 @@ public class CryptUtil {
     }
 
     /**
-     * A helper function to decrypt an ecnrypted Message sent between a client
-     * and a server.
+     * A helper function to decrypt an ecnrypted Message sent between a client and a
+     * server.
      *
-     * @param secretEncrypted encrypted secret key, can only be decrepted with a private key of an entity
-     *                        for which the message was intended
-     * @param privateKey      private key of the receiver, an entity for which the message was intended
+     * @param secretEncrypted encrypted secret key, can only be decrepted with a
+     *                        private key of an entity for which the message was
+     *                        intended
+     * @param privateKey      private key of the receiver, an entity for which the
+     *                        message was intended
      * @return a decrypted instance of Message object
      * @throws NoSuchPaddingException
      * @throws NoSuchAlgorithmException
@@ -231,16 +248,14 @@ public class CryptUtil {
      * @throws InvalidKeySpecException
      */
     public static SecretKey decrypt(byte[] secretEncrypted, PrivateKey privateKey)
-            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
-            IOException, ClassNotFoundException, InvalidKeySpecException, BadPaddingException, IllegalBlockSizeException {
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IOException,
+            ClassNotFoundException, InvalidKeySpecException, BadPaddingException, IllegalBlockSizeException {
         Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] decrypted = cipher.doFinal(secretEncrypted);
         SecretKey secretKey = new SecretKeySpec(decrypted, "AES");
         return secretKey;
     }
-
-
 
     public static String saltPass(String pass, String salt) throws Exception {
         // https://www.baeldung.com/java-password-hashing
@@ -261,7 +276,6 @@ public class CryptUtil {
         return encodedPassword;
     }
 
-
     public static byte[] genSalt() {
         SecureRandom random = new SecureRandom();
         byte[] salt = new byte[32];
@@ -269,8 +283,6 @@ public class CryptUtil {
 
         return salt;
     }
-
-
 
     public static Message decryptSafeMessage(String username, SafeMessage safeMessage) throws Exception {
         PrivateKey serverPrivateKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, username);
@@ -280,10 +292,11 @@ public class CryptUtil {
         return data;
     }
 
-        /* Comment and uncomment depending on the need
-        (should be a one-time use only for creating the server's key pair)
-   */
-    public static void main (String[] args) {
+    /*
+     * Comment and uncomment depending on the need (should be a one-time use only
+     * for creating the server's key pair)
+     */
+    public static void main(String[] args) {
         try {
             CryptUtil.genKeyPair(ALGO_NAME, "jsmith24");
         } catch (NoSuchAlgorithmException e) {
@@ -291,51 +304,52 @@ public class CryptUtil {
         }
     }
 
+    // public static void main (String[] args) {
+    // try {
+    //// CryptUtil.genSecretKey();
+    // SecretKey key = getSecretKey();
+    //
+    // System.out.println(Base64.getEncoder().encodeToString(key.getEncoded()));
+    //
+    // byte[] encrypted = CryptUtil.encrypt(key,
+    // CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, "server"));
+    // System.out.println(Base64.getEncoder().encodeToString(encrypted));
+    //
+    //
+    // SecretKey key1 = CryptUtil.decrypt(encrypted,
+    // CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server"));
+    // System.out.println(Base64.getEncoder().encodeToString(key1.getEncoded()));
+    //
+    // assert(key1 == key);
+    //
+    //
+    // } catch (NoSuchAlgorithmException e) {
+    // e.printStackTrace();
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // }
+    // }
+    // }
 
-//        public static void main (String[] args) {
-//        try {
-////            CryptUtil.genSecretKey();
-//            SecretKey key = getSecretKey();
-//
-//            System.out.println(Base64.getEncoder().encodeToString(key.getEncoded()));
-//
-//            byte[] encrypted = CryptUtil.encrypt(key, CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, "server"));
-//            System.out.println(Base64.getEncoder().encodeToString(encrypted));
-//
-//
-//            SecretKey key1 = CryptUtil.decrypt(encrypted, CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server"));
-//            System.out.println(Base64.getEncoder().encodeToString(key1.getEncoded()));
-//
-//            assert(key1 == key);
-//
-//
-//        } catch (NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
-//}
-
-
-//    public static void main(String[] args) {
-//        try {
-//            SecretKey key = CryptUtil.genSecretKey();
-//            Message message = new Message(4);
-//            SealedObject obj = CryptUtil.encrypt(message, key);
-//
-//            byte[] encrypted = CryptUtil.encrypt(key, CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, "server"));
-//            SecretKey key1 = CryptUtil.decrypt(encrypted, CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server"));
-//
-//            Message message1 = CryptUtil.decrypt(obj, key1);
-//
-//            assert message1 == message;
-//
-//        } catch (NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
+    // public static void main(String[] args) {
+    // try {
+    // SecretKey key = CryptUtil.genSecretKey();
+    // Message message = new Message(4);
+    // SealedObject obj = CryptUtil.encrypt(message, key);
+    //
+    // byte[] encrypted = CryptUtil.encrypt(key,
+    // CryptUtil.getPublicKey(CryptUtil.ALGO_NAME, "server"));
+    // SecretKey key1 = CryptUtil.decrypt(encrypted,
+    // CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, "server"));
+    //
+    // Message message1 = CryptUtil.decrypt(obj, key1);
+    //
+    // assert message1 == message;
+    //
+    // } catch (NoSuchAlgorithmException e) {
+    // e.printStackTrace();
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // }
+    // }
 }
-

@@ -2,10 +2,9 @@ package main;
 
 import java.io.Serializable;
 
-public class User implements Serializable
-{
-    // TODO: Add docs and comments.
+public class User implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     private String username;
     private String password;
     private int tries = 3;
@@ -19,7 +18,8 @@ public class User implements Serializable
         this.salt = saltCode;
     }
 
-    // Added a second constructor to ignore the code errors in the Server.java for now..
+    // Added a second constructor to ignore the code errors in the Server.java for
+    // now..
     public User(String user, String pass, String code) {
         this.username = user;
         this.password = pass;
