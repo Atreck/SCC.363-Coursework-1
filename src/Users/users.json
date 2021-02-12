@@ -1,1 +1,6 @@
-{"usernames": ["admin", "testUser", "jessicasimp"], "admin":"Admins","testUser":"Patients","jessicasimp":"Patients"}
+{
+    "usernames": ["admin", "testUser", "jessicasimp"],
+    "admin":"Admins",
+    "testUser":"Patients",
+    "jessicasimp":"Patients"
+}
