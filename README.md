@@ -45,11 +45,19 @@ Alternatively, to use the TOTP codes, follow the instructions:
 
 ## Permissions and Logs Testing
 
-Log in normally either as an Admin or Patient with the credentials provided above or as a Doctor with the credentials listed below:
+Log in normally either as an Admin or Patient with the credentials provided above or as someone else with the credentials listed below:
 
+Register as a: ```Doctor```
 Username: ```jsmith24```
 Password: ```changemeplease```
 Key: ```none```
+
+Register as a: ```Nurse```
+Username: ```katewins678```
+Password: ```carrots%23Apps```
+Key: ```XUTWHKIO7IDSIP6EW5OTABC2ZM3XERGS```
+
+![katewins678 QR Code](katewins678_QRcode.png)
 
 Follow the on-screen instructions to invoke different actions, such as:
 
