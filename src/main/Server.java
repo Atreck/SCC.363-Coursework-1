@@ -10,7 +10,6 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.text.SimpleDateFormat;
@@ -206,7 +205,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return prepResponse(msg, username);
     }
 
-    public int addPatient(Message message) throws Exception {
+    public int addPatient1(Message message) throws Exception {
         String username = message.getUsername();
         String password = message.getPassword();
         String name = message.getName();
@@ -224,6 +223,41 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         return REGISTRATION_FAIL;
     }
 
+    public SafeMessage addPatient2(SafeMessage safeMessage) throws Exception {
+        Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
+
+        String issuer = message.getIssuer();
+        String name = message.getName();
+        String surname = message.getSurname();
+        String username = message.getUsername();
+        String pass = message.getPassword();
+        String email = message.getGroup();
+        String code = message.getCode();
+
+        int inactiveOrAnauth = checkTimeoutAndActive(issuer);
+
+        if (inactiveOrAnauth != 0) {
+            Message msg1 = new Message(inactiveOrAnauth);
+            return prepResponse(msg1, issuer);
+        }
+
+        Message msg = new Message(REGISTRATION_FAIL);
+        RecordsUtil.updateUserTimestamp(issuer);
+
+        if (!RecordsUtil.userExists(username)) {
+            boolean status = false;
+            msg = new Message(FORBIDDEN);
+            status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_PATIENTS);
+            if (status) {
+                RecordsUtil.addPatient(username, name, surname, email, pass, code);
+                register(username); // this is so that a key pair is generated
+                msg = new Message(OK);
+            }
+        }
+
+        return prepResponse(msg, issuer);
+    }
+
      public SafeMessage addUser(SafeMessage safeMessage) throws Exception {
          Message message = CryptUtil.decryptSafeMessage("server", safeMessage);
 
@@ -236,7 +270,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
          String group = message.getGroup();
          String code = message.getCode();
 
-         System.out.println(group);
+//         System.out.println(group);
 
          int inactiveOrAnauth = checkTimeoutAndActive(issuer);
 
@@ -246,11 +280,12 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
          }
 
          Message msg = new Message(REGISTRATION_FAIL);
+         RecordsUtil.updateUserTimestamp(issuer);
          if (!RecordsUtil.userExists(username)) {
              boolean status = false;
              msg = new Message(FORBIDDEN);
              status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_ACCOUNTS);
-             if (!status) status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_PATIENTS);
+//             if (!status) status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_REGISTER_PATIENTS);
              if (status) {
                  RecordsUtil.addUser(name, surname, username, email, pass, group, code);
                  register(username); // this is so that a key pair is generated
@@ -344,6 +379,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         Map<String, String> users = new HashMap<>();
         boolean status = false;
         Message message = new Message(FORBIDDEN, users);
+        RecordsUtil.updateUserTimestamp(issuer);
         status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_READ_USERS);
         if (status) {
             users = RecordsUtil.readUsers();
@@ -377,6 +413,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         String records = "";
         Message message = new Message(FORBIDDEN, records);
         boolean status = false;
+        RecordsUtil.updateUserTimestamp(issuer);
         // we check if it is a Patient just accessing their own data or it is someone
         // else
         String group = RecordsUtil.getContext(issuer).getGroup();
@@ -421,17 +458,17 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         // we check if it is a Patient just accessing their own data or it is someone
         // else
         String group = RecordsUtil.getContext(issuer).getGroup();
+        RecordsUtil.updateUserTimestamp(issuer); // update last_active timestamp
         if (!issuer.equals(usertosee)) {
             System.out.println("Update user");
             status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_WRITE_PATIENTS);
             if (status) {
                 // here we update records and send back an OK message
-                RecordsUtil.updatePatient(usertosee);
+                // nothing here cos it is just a simulation
                 message = new Message(OK);
             }
         } else if (group.equals("Patients")) { // issuer is the same as the user to see and belongs to Patients
             // here we update records and send back an OK message
-            RecordsUtil.updatePatient(usertosee);
             message = new Message(OK);
         }
 
@@ -456,6 +493,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         boolean status = false;
         Message message = new Message(FORBIDDEN, permissions);
         status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_READ_GROUPS);
+        RecordsUtil.updateUserTimestamp(issuer); // update las_active timestamp
         if (status) {
             permissions = RecordsUtil.readGroupPerms(group);
             message = new Message(OK, permissions);
@@ -482,6 +520,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         boolean status = false;
         Message message = new Message(FORBIDDEN);
         status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_WRITE_GROUPS);
+        RecordsUtil.updateUserTimestamp(issuer);
         if (status) {
 //            System.out.println("Setting new permissions for: " + group);
             RecordsUtil.setGroupPerms(newPermissions, group);
@@ -508,6 +547,7 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
         boolean status = false;
         Message message = new Message(FORBIDDEN);
         status = RecordsUtil.hasPerms(issuer, RecordsUtil.CAN_ASSIGN_PERMS);
+        RecordsUtil.updateUserTimestamp(issuer);
         if (status) {
 //            System.out.println("Setting new permissions for: " + group);
             RecordsUtil.assignToGroup(assignee, group);

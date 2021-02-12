@@ -28,7 +28,9 @@ public interface MedicalService extends Remote {
 
     SafeMessage verifyCode(SafeMessage obj) throws Exception;
 
-    int addPatient(Message message) throws Exception;
+    int addPatient1(Message message) throws Exception;
+
+    SafeMessage addPatient2(SafeMessage obj) throws Exception;
 
     boolean challengeUser(Main client, String username) throws Exception;
 

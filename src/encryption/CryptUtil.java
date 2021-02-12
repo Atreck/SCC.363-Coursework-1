@@ -72,8 +72,8 @@ public class CryptUtil {
         // Keys can be 1024 or 2048-bit long (the longer the harder to crack)
         KeyPair pair = keyGen.generateKeyPair();
 
-        saveInFile("./Keys/" + user + "/PublicKey", pair.getPublic().getEncoded());
-        saveInFile("./Keys/" + user + "/PrivateKey", pair.getPrivate().getEncoded());
+        saveInFile(prefix+"/Keys/" + user + "/PublicKey", pair.getPublic().getEncoded());
+        saveInFile(prefix+"/Keys/" + user + "/PrivateKey", pair.getPrivate().getEncoded());
 
         return pair;
     }
@@ -283,13 +283,13 @@ public class CryptUtil {
         /* Comment and uncomment depending on the need
         (should be a one-time use only for creating the server's key pair)
    */
-//    public static void main (String[] args) {
-//        try {
-//            CryptUtil.genKeyPair(ALGO_NAME, "server");
-//        } catch (NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        }
-//    }
+    public static void main (String[] args) {
+        try {
+            CryptUtil.genKeyPair(ALGO_NAME, "jsmith24");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 //        public static void main (String[] args) {

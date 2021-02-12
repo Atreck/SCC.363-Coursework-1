@@ -92,7 +92,7 @@ public class RecordsUtil {
     }
 
     // dummy function just to update the last_active timestamp
-    public static void updatePatient(String username) throws IOException, ParseException {
+    public static void updateUserTimestamp(String username) throws IOException, ParseException {
         String group = getGroup(username);
 
         // typecasting obj to JSONObject

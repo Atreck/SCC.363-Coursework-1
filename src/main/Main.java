@@ -56,6 +56,10 @@ public class Main implements Serializable {
     private final String ADD_USER = "add_user";
     private final String DEL_USER = "del_user\\s\\w+";
 
+    private final String UPDATE_RECORDS = "update_records\\s\\w+";
+    private final String GET_RECORDS = "get_records\\s\\w+";
+
+
     private final int CREDENTIALS_OK = 2;
     private final int CREDENTIALS_BAD = 3;
     private final int CODE_INCORRECT = 4;
@@ -68,7 +72,6 @@ public class Main implements Serializable {
     private final int FORBIDDEN = 403;
     private final int INACTIVE_TIMEOUT = 408;
     private final int AUTH_REQUIRED = 511;
-    // private final int NOT_ALLOWED = 405;
     private final int ERROR = 400;
 
     // TODO: Add docs and comments.
@@ -288,8 +291,27 @@ public class Main implements Serializable {
         }
     }
 
-    public void menuScreenStaff(String username) {
-        ;
+    public void menuScreenStaff(String username) throws Exception {
+        System.out.println("\n1. Type 'get_records <username>' to get the specified user's records.");
+        System.out.println("2. Type 'update_records <username>' to update records of the specified patient.");
+        System.out.println("3. Type 'register' to register a new patient.");
+        System.out.println("4. Type 'logout' to end the session.");
+
+        String action = userInput();
+
+        if (action.matches(GET_RECORDS)) {
+            String usertosee = action.split(" ")[1];
+            see_records(username, usertosee);
+        } else if (action.matches(UPDATE_RECORDS)) {
+            String usertoupdate = action.split(" ")[1];
+            update_records(username, usertoupdate);
+        } else if (action.matches(REGISTER)) {
+            registerLogged(username);
+        } else if (action.matches(LOGOUT)) {
+            logout();
+        } else {
+            menuScreenStaff(username);
+        }
     }
 
     public void menuScreenPatient(String username) throws Exception {
@@ -326,7 +348,7 @@ public class Main implements Serializable {
 
         switch (s.nextLine()) {
             case REGISTER:
-                register();
+                registerNotLogged();
                 break;
             case LOGIN:
                 login();
@@ -406,17 +428,17 @@ public class Main implements Serializable {
             // Finally if everything went gucci display the screen corresponding to the user
             // group
             if (status == CODE_CORRECT) {
-                System.out.print("\n\nWELCOME BACK " + tempUsername);
+                System.out.println("\n\nWELCOME BACK " + tempUsername + "\n");
                 // helper
-                 System.out.print("Your group: " + response.getGroup());
+//                 System.out.print("Your group: " + response.getGroup());
                 switch (response.getGroup()) {
                     case "Patients":
                         menuScreenPatient(tempUsername);
                     case "Admins":
                         menuScreenAdmin(tempUsername);
-                        // case "Nurses": menuScreenStaff(tempUsername);
-                        // case "Doctors": menuScreenStaff(tempUsername);
-                        // case "Receptionists": menuScreenStaff(tempUsername);
+                        case "Nurses": menuScreenStaff(tempUsername);
+                        case "Doctors": menuScreenStaff(tempUsername);
+                        case "Receptionists": menuScreenStaff(tempUsername);
                     default:
                         exit();
                 }
@@ -438,19 +460,16 @@ public class Main implements Serializable {
         }
     }
 
-    // TODO: fuck that we don't have time
-    // TODO: might want to redesign so that users do not choose the username
-    // themselves but are rather assigned some IDs
-    private void register() throws Exception {
-        System.out.println("\nREGISTRATION SYSTEM\n\nEnter your first name:");
+    private void registerNotLogged() throws Exception {
+        System.out.println("\nREGISTRATION SYSTEM\n\nEnter first name:");
         // Username input
         tempName = userInput();
-        System.out.println("\n\nEnter your last name:");
+        System.out.println("\n\nEnter last name:");
         tempSurname = userInput();
-        System.out.println("\n\nEnter your email:");
+        System.out.println("\n\nEnter email:");
         tempMail = userInput();
         String pass = takeNewPass();
-        System.out.println("\n\nEnter a username you would like to use:");
+        System.out.println("\n\nEnter a username to use:");
         tempUsername = userInput();
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
@@ -458,7 +477,7 @@ public class Main implements Serializable {
         if(server.strengthCheck(new Message(null, pass))) {
             String code = setUpAuthentication();
             Message msg = new Message(tempName, tempSurname, tempUsername, pass, tempMail, code);
-            int status = server.addPatient(msg);
+            int status = server.addPatient1(msg);
             System.out.println("\n\nWOHOO REGISTRATION SUCCESSFUL!");
             mainScreen();
         } else {
@@ -469,7 +488,55 @@ public class Main implements Serializable {
             System.out.println("At least 1 number");
             System.out.println("At least 1 special character");
             System.out.println("At least 10 characters");
-            register();
+            registerNotLogged();
+        }
+    }
+
+
+    private void registerLogged(String issuer)  throws Exception {
+        System.out.println("\nREGISTRATION SYSTEM\n\nEnter first name:");
+        // Username input
+        tempName = userInput();
+        System.out.println("\n\nEnter last name:");
+        tempSurname = userInput();
+        System.out.println("\n\nEnter email:");
+        tempMail = userInput();
+        String pass = takeNewPass();
+        System.out.println("\n\nEnter username:");
+        String username = userInput();
+
+        // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
+        // SHOULDN'T BE HERE NOT ON THE CLIENT SIDE!!!!! SHOULD PART OF THE ADD PATIENT!!!! UP!!!!
+        if(server.strengthCheck(new Message(null, pass))) {
+            String code = setUpAuthentication();
+            Message msg = new Message(issuer, tempName, tempSurname, username, pass, tempMail, code);
+
+            SafeMessage safeMessage = prepMessage(msg);
+            SafeMessage sealedResponse = server.addPatient2(safeMessage);
+
+            Message response = CryptUtil.decryptSafeMessage(issuer, sealedResponse);
+            if (response.getStatus() == FORBIDDEN) {
+                System.out.println("Sorry you might not have permissions to perform this action.");
+            } else if (response.getStatus() == OK) {
+                // group field may be used to carry records as well as it is all strings
+                System.out.println("\nUSER " + username + " SUCCESSFULLY REGISTERED\n");
+            } else if (response.getStatus() == REGISTRATION_FAIL) {
+                System.out.println("\nAn account with those credentials may already exist or password is too weak.");
+                System.out.println("Please ensure your password includes all requirements: ");
+                System.out.println("At least 1 lowercase character");
+                System.out.println("At least 1 uppercase character");
+                System.out.println("At least 1 number");
+                System.out.println("At least 1 special character");
+                System.out.println("At least 10 characters");
+            }
+            else if (response.getStatus() == INACTIVE_TIMEOUT) {
+                System.out.println("Automatic logout after an inactive period:\n");
+                exit();
+            } else if (response.getStatus() == AUTH_REQUIRED) {
+                System.out.println("You are not logged in!");
+                exit();
+            }
+            menuScreenStaff(issuer);
         }
     }
 
