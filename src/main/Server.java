@@ -54,19 +54,27 @@ public class Server extends java.rmi.server.UnicastRemoteObject implements Medic
 //    private static String prefix = "src";
 
     private static final Logger logger = Logger.getLogger(Server.class.getName());
+    private FileHandler handler;
 
     public Server() throws Exception {
         super();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy hh-mm-ss a");
         String currentLog = sdf.format(new Date()) + ".txt";
-        File file = new File(prefix+"/Logs/" + currentLog);
+        File file = new File(prefix + "/Logs/" + currentLog);
+        
         // when someone doesn't have the Logs folder
         file.getParentFile().mkdirs();
-        logger.addHandler(new FileHandler(prefix+"/Logs/" + currentLog, true));
         file.setReadOnly();
 //        RecordsUtil.addUser("Joe", "Admindoe", "admin",
 //                "JDoe@mediservice.com", "superUser89@pass",
 //                "Admins", "BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A");
+
+        handler = new FileHandler(prefix + "/Logs/" + currentLog);
+        logger.addHandler(handler);
+
+        SimpleFormatter formatter = new SimpleFormatter();  
+        handler.setFormatter(formatter);
+
 //        addPatient(new Message("Joe", "Doe", "testUser", "MyPassword#3456", "jdoe@email.com","MAAULT5OH5P4ZAW7JC5PWJIMZZ7VWRNU"));
     }
 
