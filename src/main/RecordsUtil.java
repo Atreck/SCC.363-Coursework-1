@@ -249,7 +249,9 @@ public class RecordsUtil {
         JSONObject jo = (JSONObject) obj;
         JSONArray users = (JSONArray) jo.get("usernames");
 
+        // it is possible to check contains
         if (users.contains(username)) return true;
+
         return false;
     }
 
