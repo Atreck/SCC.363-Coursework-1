@@ -193,8 +193,6 @@ public class RecordsUtil {
         Object obj = new JSONParser().parse(new FileReader(prefix+"/Users/permissions.json"));
         JSONObject jo = (JSONObject) obj;
 
-        JSONArray ja = (JSONArray) jo.get(group);
-
         // typecasting obj to JSONObject
         JSONObject jo2 = getUserJObj(username, group);
         long active = (long) jo2.get("active");
@@ -251,7 +249,9 @@ public class RecordsUtil {
         JSONObject jo = (JSONObject) obj;
         JSONArray users = (JSONArray) jo.get("usernames");
 
+        // it is possible to check contains
         if (users.contains(username)) return true;
+
         return false;
     }
 

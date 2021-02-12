@@ -1,6 +1,7 @@
 package main;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.FileSystems;
@@ -91,10 +92,10 @@ public class Main implements Serializable {
 
         response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
         if (response.getStatus() == FORBIDDEN) {
-            System.out.println("Sorry you might not have permissions to perform this action.");
+            System.out.println("\n<Sorry you might not have permissions to perform this action.>");
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
-            System.out.println("\\nYour medical history:\n" + response.getGroup());
+            System.out.println("\nMedical history:\n" + response.getGroup());
         } else if (response.getStatus() == INACTIVE_TIMEOUT) {
             System.out.println("Automatic logout after an inactive period:\n");
             exit();
@@ -114,7 +115,7 @@ public class Main implements Serializable {
 
         response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
         if (response.getStatus() == FORBIDDEN) {
-            System.out.println("Sorry you might not have permissions to perform this action.");
+            System.out.println("\n<Sorry you might not have permissions to perform this action.>\n");
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("Records updated successfully for user: " + usertoupdate);
@@ -182,7 +183,7 @@ public class Main implements Serializable {
         String group = userInput();
         System.out.print("User's pass");
         String pass = userInput();
-        String keycode = setUpAuthentication();
+        String keycode = setUpAuthentication(username);
 
         System.out.println(group);
         Message msg = new Message(issuer, name, surname, username, pass, group, keycode);
@@ -192,7 +193,7 @@ public class Main implements Serializable {
 
         Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
         if (response.getStatus() == FORBIDDEN) {
-            System.out.println("Sorry you might not have permissions to perform this action.");
+            System.out.println("\n<Sorry you might not have permissions to perform this action.>");
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("\nREGISTERED USER: " + username + "\n");
@@ -232,7 +233,7 @@ public class Main implements Serializable {
 
         Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
         if (response.getStatus() == FORBIDDEN) {
-            System.out.println("Sorry you might not have permissions to perform this action.");
+            System.out.println("\n<Sorry you might not have permissions to perform this action.>");
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("\nREGISTERED USERS:\n");
@@ -256,7 +257,7 @@ public class Main implements Serializable {
 
         Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
         if (response.getStatus() == FORBIDDEN) {
-            System.out.println("Sorry you might not have permissions to perform this action.");
+            System.out.println("\n<Sorry you might not have permissions to perform this action.>");
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("\nPERMISSIONS FOR GROUP:" + group + "\n");
@@ -285,7 +286,7 @@ public class Main implements Serializable {
 
         Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
         if (response.getStatus() == FORBIDDEN) {
-            System.out.println("Sorry you might not have permissions to perform this action.");
+            System.out.println("\n<Sorry you might not have permissions to perform this action.>");
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("\nNEW PERMISSIONS SET FOR GROUP:" + group + "\n");
@@ -305,7 +306,7 @@ public class Main implements Serializable {
 
         Message response = CryptUtil.decryptSafeMessage(tempUsername, sealedResponse);
         if (response.getStatus() == FORBIDDEN) {
-            System.out.println("Sorry you might not have permissions to perform this action.");
+            System.out.println("\n<Sorry you might not have permissions to perform this action.>");
         } else if (response.getStatus() == OK) {
             // group field may be used to carry records as well as it is all strings
             System.out.println("\nUSER " + assignee + " NOW ASSIGNED TO GROUP:" + group + "\n");
@@ -435,47 +436,53 @@ public class Main implements Serializable {
          * in the report that in the production normally there would be a different key
          * pair
          */
-        SafeMessage encryptedMsg = prepMessage(msg);
-        SafeMessage sealedResponse = server.authenticateUser(encryptedMsg);
+        try {
+            SafeMessage encryptedMsg = prepMessage(msg);
+            SafeMessage sealedResponse = server.authenticateUser(encryptedMsg);
 
-        PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempUsername);
-        SecretKey decryptedKey = CryptUtil.decrypt(sealedResponse.getSecretKeyEncrypted(), userPrivKey);
+            PrivateKey userPrivKey = CryptUtil.getPrivateKey(CryptUtil.ALGO_NAME, tempUsername);
+            SecretKey decryptedKey = CryptUtil.decrypt(sealedResponse.getSecretKeyEncrypted(), userPrivKey);
 
-        response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
-        if (response.getStatus() == CREDENTIALS_OK) {
-            response = takeCode(); // proceed with code verification
-            status = response.getStatus();
-            while (status == CODE_INCORRECT) {
-                System.out.println("\n\n<Code incorrect, please try again.>");
-                response = takeCode();
+            response = CryptUtil.decrypt(sealedResponse.getObj(), decryptedKey);
+            if (response.getStatus() == CREDENTIALS_OK) {
+                response = takeCode(); // proceed with code verification
                 status = response.getStatus();
-            }
+                while (status == CODE_INCORRECT) {
+                    System.out.println("\n\n<Code incorrect, please try again.>");
+                    response = takeCode();
+                    status = response.getStatus();
+                }
 
-            checkLocked(status); // check if the account has been locked
-            // Finally if everything went gucci display the screen corresponding to the user
-            // group
-            if (status == CODE_CORRECT) {
-                System.out.println("\n\nWELCOME BACK " + tempUsername + "\n");
-                // helper
+                checkLocked(status); // check if the account has been locked
+                // Finally if everything went gucci display the screen corresponding to the user
+                // group
+                if (status == CODE_CORRECT) {
+                    System.out.println("\n\nWELCOME BACK " + tempUsername + "\n");
+                    // helper
 //                 System.out.print("Your group: " + response.getGroup());
-                switch (response.getGroup()) {
-                    case "Patients":
-                        menuScreenPatient(tempUsername);
-                    case "Admins":
-                        menuScreenAdmin(tempUsername);
+                    switch (response.getGroup()) {
+                        case "Patients":
+                            menuScreenPatient(tempUsername);
+                        case "Admins":
+                            menuScreenAdmin(tempUsername);
                         case "Nurses": menuScreenStaff(tempUsername);
                         case "Doctors": menuScreenStaff(tempUsername);
                         case "Receptionists": menuScreenStaff(tempUsername);
-                    default:
-                        exit();
+                        default:
+                            exit();
+                    }
                 }
+            } else if (response.getStatus() == CREDENTIALS_BAD) {
+                System.out.println("\n\n<Login error - incorrect credentials.>");
+                login();
+            } else {
+                System.out.println("\n\n<There is an impostor among us.>");
+                checkLocked(response.getStatus());
             }
-        } else if (response.getStatus() == CREDENTIALS_BAD) {
-            System.out.println("\n\n<Login error - incorrect credentials.>");
-            login();
-        } else {
-            System.out.println("\n\n<There is an impostor among us.>");
-            checkLocked(response.getStatus());
+        }
+        catch (NullPointerException | FileNotFoundException exception) {
+            System.out.println("\n\n<You might not be registered with medical service. Register now.>\n\n");
+            mainScreen();
         }
     }
 
@@ -501,7 +508,7 @@ public class Main implements Serializable {
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
         if(server.strengthCheck(new Message(null, pass))) {
-            String code = setUpAuthentication();
+            String code = setUpAuthentication(tempUsername);
             Message msg = new Message(tempName, tempSurname, tempUsername, pass, tempMail, code);
             int status = server.addPatient1(msg);
             System.out.println("\n\nWOHOO REGISTRATION SUCCESSFUL!");
@@ -533,7 +540,7 @@ public class Main implements Serializable {
 
         // https://security.stackexchange.com/questions/45594/should-users-password-strength-be-assessed-at-client-or-at-server-side
         if(server.strengthCheck(new Message(null, pass))) {
-            String code = setUpAuthentication();
+            String code = setUpAuthentication(username);
             Message msg = new Message(issuer, tempName, tempSurname, username, pass, tempMail, code);
 
             SafeMessage safeMessage = prepMessage(msg);
@@ -541,10 +548,16 @@ public class Main implements Serializable {
 
             Message response = CryptUtil.decryptSafeMessage(issuer, sealedResponse);
             if (response.getStatus() == FORBIDDEN) {
-                System.out.println("Sorry you might not have permissions to perform this action.");
+                System.out.println("\n<Sorry you might not have permissions to perform this action.>");
             } else if (response.getStatus() == OK) {
                 // group field may be used to carry records as well as it is all strings
                 System.out.println("\nUSER " + username + " SUCCESSFULLY REGISTERED\n");
+            } else if (response.getStatus() == INACTIVE_TIMEOUT) {
+                System.out.println("Automatic logout after an inactive period:\n");
+                exit();
+            } else if (response.getStatus() == AUTH_REQUIRED) {
+                System.out.println("You are not logged in!");
+                exit();            
             } else if (response.getStatus() == REGISTRATION_FAIL) {
                 System.out.println("\nYour username may not be one that has been previously registered before or your password is too weak.");
                 System.out.println("Please ensure your password includes all requirements: ");
@@ -554,15 +567,17 @@ public class Main implements Serializable {
                 System.out.println("At least 1 special character");
                 System.out.println("At least 10 characters");
             }
-            else if (response.getStatus() == INACTIVE_TIMEOUT) {
-                System.out.println("Automatic logout after an inactive period:\n");
-                exit();
-            } else if (response.getStatus() == AUTH_REQUIRED) {
-                System.out.println("You are not logged in!");
-                exit();
-            }
-            menuScreenStaff(issuer);
         }
+        else {
+            System.out.println("\nAn account with those credentials may already exist or password is too weak.");
+            System.out.println("Please ensure your password includes all requirements: ");
+            System.out.println("At least 1 lowercase character");
+            System.out.println("At least 1 uppercase character");
+            System.out.println("At least 1 number");
+            System.out.println("At least 1 special character");
+            System.out.println("At least 10 characters");
+        }
+        menuScreenStaff(issuer);
     }
 
     public String takeNewPass() throws Exception { // registration password
@@ -607,21 +622,21 @@ public class Main implements Serializable {
         return response;
     }
 
-    private String setUpAuthentication() throws Exception { // registration auth
+    private String setUpAuthentication(String username) throws Exception { // registration auth
         System.out.println("\nWould you like to set up Two Factor Authentication? (yes/no)");
         String key = "none";
         while (true) {
             String cmd = userInput();
             if (cmd.equals("yes")) {
                 key = server.secretKeyGen();
-                createQRimage(tempUsername, key);
+                createQRimage(username, key);
                 System.out.println("\nPlease scan the picture displayed.");
 
                 // ------------------------------- FOR WINDOWS
                 // -----------------------------------//
-//                String command = "cmd.exe /c start " + "./" + tempUsername + "_QRcode.png";
+//                String command = "cmd.exe /c start " + "./" + username + "_QRcode.png";
                 // ------------------------------- FOR LINUX --------------------------------//
-                 String command = "xdg-open " + tempUsername + "_QRcode.png";
+                 String command = "xdg-open " + username + "_QRcode.png";
 
                 Runtime.getRuntime().exec(command);
                 System.out.println("Alternatively, enter this code on your authenticator app:\n" + key);

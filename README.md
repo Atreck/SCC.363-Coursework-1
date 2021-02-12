@@ -23,7 +23,7 @@ javac -cp "src/lib/*;." src/*.java;&java -cp "src/lib/*;." src.Main
 A 2FA service is optional when registering. Two dummy accounts have been set up with it enabled. In order to login, the Time-based One Time Password must be entered. The details of the dummy accounts are currently:
 
 Username: ```admin```
-Password: ```password```
+Password: ```superUser89@pass```
 Key: ```BGLBEVX44CZC45IOAQI3IFJBDBEOYY3A```
 
 ![admin QR Code](admin.png)
@@ -42,3 +42,37 @@ Alternatively, to use the TOTP codes, follow the instructions:
 - Download an authenticator application on your phone (Google Authenticator works well).
 - Enter the key for the listed account.
 - A 6-digit code will cycle every few seconds, enter that when prompted on the login.
+
+## Permissions and Logs Testing
+
+Log in normally either as an Admin or Patient with the credentials provided above or as someone else with the credentials listed below:
+
+Register as a: ```Doctor```<br>
+Username: ```jsmith24```<br>
+Password: ```changemeplease```<br>
+Key: ```none```
+
+Register as a: ```Nurse```<br>
+Username: ```katewins678```<br>
+Password: ```carrots%23Apps```<br>
+Key: ```XUTWHKIO7IDSIP6EW5OTABC2ZM3XERGS```
+
+![katewins678 QR code](katewins678_QRcode.png)
+
+Register as a: ```Receptionist```<br>
+Username: ```ahopkins15```<br>
+Password: ```hopDrop%Bom12```<br>
+Key: ```MQ52WMF4JQYV2FSLHB6AVFDDDBQPZVUO```
+
+![ahopkins15 QR code](ahopkins15_QRcode.png)
+
+Follow the on-screen instructions to invoke different actions, such as:
+
+- see group permissions
+  <br>go to [RecordsUtil.java](src/main/RecordsUtil.java) to see mappings between numerical values to their human-readable form
+- update group permissions (as above)
+- get user's/ patient's records
+- update user's/ patient's records
+- assign a user to a group
+
+And see what you are allowed/ not allowed to do.
