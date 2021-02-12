@@ -335,9 +335,9 @@ public class Main implements Serializable {
             registerLogged(username);
         } else if (action.matches(LOGOUT)) {
             logout();
-        } else {
-            menuScreenStaff(username);
         }
+        menuScreenStaff(username);
+
     }
 
     public void menuScreenPatient(String username) throws Exception {
